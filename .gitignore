@@ -1,0 +1,11 @@
+build
+*.DS_Store
+*.swp
+*.swo
+*.orig
+tags
+board_config.cmake
+CA.pem
+libs
+src/generated
+__pycache__/

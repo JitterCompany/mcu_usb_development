@@ -1,0 +1,23 @@
+# === Local board config === #
+# This is a separate config file to avoid committing
+# changes in the main Makefile.
+# See cmake/common_settings.cmake for the defaults.
+
+
+# Select target board. See cmake/common_settings.cmake for valid boards.
+# Note: NO TRAILING WHITESPACE ALLOWED!
+
+set(BOARD   BOARD_DEV)
+
+
+# Enable / Disable log_debug() statements
+set(EN_DEBUG        0)
+
+# Enable / Disable PROFILE statements
+set(EN_PROFILE      0)
+
+# Enable / Disable USB support
+set(EN_USB          1)
+
+# Set optimize level
+set(OPTIMIZE        2)
