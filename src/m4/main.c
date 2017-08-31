@@ -23,6 +23,7 @@
 #include "usb_device.h"
 #include "usb_queue.h"
 #include "usb_endpoint.h"
+#include "dynamic_descriptors.h"
 
 #define CPU_FREQ 60000000
 #define TICKRATE_HZ (5)
@@ -115,11 +116,22 @@ void HardFault_Handler(void)
     status_led_set(RED, 1);
 }
 
+#define PRODUCT_STR ("Generic Sensor")
+#define VENDOR_STR ("Jitter")
+#define VENDOR_ID (0x3853)
+#define PRODUCT_ID (0x0021)
+#define PRODUCT_REV (0x0200)
+
 
 int main(void)
 {
     
     init();
+
+    // 
+    USBDescriptorDevice *device_descriptor =
+    descriptor_make_device(VENDOR_ID, PRODUCT_ID, PRODUCT_REV);
+    usb_device.descriptor = device_descriptor;
 
     usb_set_configuration_changed_cb(usb_configuration_changed);
 	usb_peripheral_reset(&usb_devices[0]);

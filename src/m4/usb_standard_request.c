@@ -143,7 +143,8 @@ static usb_request_status_t usb_standard_request_get_descriptor_setup(
 ) {
 	switch( endpoint->setup.value_h ) {
 	case USB_DESCRIPTOR_TYPE_DEVICE:
-		return usb_send_descriptor(endpoint, endpoint->device->descriptor);
+		//return usb_send_descriptor(endpoint, endpoint->device->descriptor);
+		return usb_send_descriptor(endpoint, (uint8_t*)endpoint->device_new->descriptor);
 		
 	case USB_DESCRIPTOR_TYPE_CONFIGURATION:
 		// TODO: Duplicated code. Refactor.
