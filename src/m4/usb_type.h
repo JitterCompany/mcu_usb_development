@@ -237,7 +237,7 @@ typedef struct
 
 typedef struct {
 	USBDescriptorDevice *descriptor;
-	USBDescriptorString *descriptor_strings;
+	const USBDescriptorString **descriptor_strings;
 	const uint8_t* const qualifier_descriptor;
 	
 } USBDevice;

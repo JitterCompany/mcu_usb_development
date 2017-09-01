@@ -115,23 +115,51 @@ void HardFault_Handler(void)
 {
     status_led_set(RED, 1);
 }
-
+#define USB_WORD(x)	(x & 0xFF), ((x >> 8) & 0xFF)
+#define USB_STRING_LANGID		(0x0409)
 #define PRODUCT_STR ("Generic Sensor")
-#define VENDOR_STR ("Jitter")
+#define MANUFACTURER_STR ("Jitter")
 #define VENDOR_ID (0x3853)
 #define PRODUCT_ID (0x0021)
 #define PRODUCT_REV (0x0200)
 
+uint8_t descriptor_string_languages[] = {
+	0x04,			    // bLength
+	USB_DESCRIPTOR_TYPE_STRING,	    // bDescriptorType
+	USB_WORD(USB_STRING_LANGID),	// wLANGID
+};
+
+const USBDescriptorString *descriptor_strings[] = {
+	(USBDescriptorString*) &descriptor_string_languages,
+	0,
+	0,
+	0,
+	0,		// TERMINATOR
+};
 
 int main(void)
 {
     
     init();
 
-    // 
+    char serial_string[] = "0xDEADCAFE";
     USBDescriptorDevice *device_descriptor =
     descriptor_make_device(VENDOR_ID, PRODUCT_ID, PRODUCT_REV);
+
+
+    const USBDescriptorString *manufacturer_str_desc;
+    const USBDescriptorString *product_str_desc;
+    const USBDescriptorString *serial_str_desc;
+    descriptor_from_string(&manufacturer_str_desc, MANUFACTURER_STR);
+    descriptor_from_string(&product_str_desc, PRODUCT_STR);
+    descriptor_from_string(&serial_str_desc, serial_string);
+    
+    descriptor_strings[MANUFACTURER_INDEX] = manufacturer_str_desc;
+    descriptor_strings[PRODUCT_INDEX] = product_str_desc;
+    descriptor_strings[SERIAL_INDEX] = serial_str_desc;
+    
     usb_device.descriptor = device_descriptor;
+    usb_device.descriptor_strings = descriptor_strings;
 
     usb_set_configuration_changed_cb(usb_configuration_changed);
 	usb_peripheral_reset(&usb_devices[0]);

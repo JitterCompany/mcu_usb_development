@@ -57,9 +57,10 @@ USBDescriptorDevice *descriptor_make_device(uint16_t idVendor,
     device->idVendor = idVendor;
     device->idProduct = idProduct;
     device->bcdDevice = bcdDevice;
-    device->iManufacturer = 1;
-    device->iProduct = 2;
-    device->iSerialNumber = 3;
+
+    device->iManufacturer = MANUFACTURER_INDEX;
+    device->iProduct = PRODUCT_INDEX;
+    device->iSerialNumber = SERIAL_INDEX;
 
     device->bNumConfigurations = 1; //TODO 0, dynamic
     return device;
@@ -192,31 +193,31 @@ USBDescriptorDevice *descriptor_make_device(uint16_t idVendor,
 // }
 
 
-// uint8_t descriptor_string(const char *const string)
-// {
-//     if(desc_storage.next_str < DESC_MAX_STR_COUNT) {
-//         /* ensure the descriptor buffer has enough space
-//          * for the largest created string descriptor
-//          * by moving the end_addr marker
-//          */
-//         uint16_t new_end_addr = DESC_BUFF_SZ - descriptor_string_size(string);
-//         if(new_end_addr < desc_storage.end_addr) {
-//             if(desc_storage.next_addr < new_end_addr) {
-//                 desc_storage.end_addr = new_end_addr;
-//             } else {
-//                 desc_storage.error_flag = true;
-//                 return NO_DESCRIPTOR;
-//             }
-//         }
-//         uint8_t assigned_index = desc_storage.next_str;
-//         desc_storage.next_str++;
-//         desc_storage.strings[assigned_index] = string;
+uint8_t descriptor_string(const char *const string)
+{
+    if(desc_storage.next_str < DESC_MAX_STR_COUNT) {
+        /* ensure the descriptor buffer has enough space
+         * for the largest created string descriptor
+         * by moving the end_addr marker
+         */
+        uint16_t new_end_addr = DESC_BUFF_SZ - descriptor_string_size(string);
+        if(new_end_addr < desc_storage.end_addr) {
+            if(desc_storage.next_addr < new_end_addr) {
+                desc_storage.end_addr = new_end_addr;
+            } else {
+                desc_storage.error_flag = true;
+                return NO_DESCRIPTOR;
+            }
+        }
+        uint8_t assigned_index = desc_storage.next_str;
+        desc_storage.next_str++;
+        desc_storage.strings[assigned_index] = string;
 
-//         return assigned_index;
-//     }
-//     desc_storage.error_flag = true;
-//     return NO_DESCRIPTOR;
-// }
+        return assigned_index;
+    }
+    desc_storage.error_flag = true;
+    return NO_DESCRIPTOR;
+}
 
 // void *descriptor_find(uint8_t bDescriptorType, uint8_t skip_count)
 // {
@@ -239,32 +240,34 @@ USBDescriptorDevice *descriptor_make_device(uint16_t idVendor,
 
 // /** Internal API **/
 
-// size_t descriptor_string_size(const char *const string)
-// {
-//     return 2 + (2*strlen(string));
-// }
-// size_t descriptor_from_string(const void **result_desc,
-//                               const char *const string)
-// {
-//     if(string == NULL) {
-//         return 0;
-//     }
-//     size_t descriptor_size = descriptor_string_size(string);
-//     uint8_t *dest_buffer = descriptor_storage_alloc(descriptor_size, false);
-//     if(dest_buffer == NULL) {
-//         return 0;
-//     }
-//     *result_desc = (void *)dest_buffer;
+size_t descriptor_string_size(const char *const string)
+{
+    return 2 + (2*strlen(string));
+}
 
-//     *(dest_buffer++) = descriptor_size;
-//     *(dest_buffer++) = DTYPE_String;
-//     size_t str_len = strlen(string);
-//     for(size_t i=0; i<str_len; i++) {
-//         *dest_buffer = string[i];
-//         dest_buffer+= 2;
-//     }
-//     return descriptor_size;
-// }
+size_t descriptor_from_string(const USBDescriptorString **result_desc,
+                              const char *const string)
+{
+    if(string == NULL) {
+        return 0;
+    }
+
+    size_t descriptor_size = descriptor_string_size(string);
+    uint8_t *dest_buffer = descriptor_storage_alloc(descriptor_size, true);
+    if(dest_buffer == NULL) {
+        return 0;
+    }
+    *result_desc = (void *)dest_buffer;
+
+    *(dest_buffer++) = descriptor_size;
+    *(dest_buffer++) = USB_DESCRIPTOR_TYPE_STRING;
+    size_t str_len = strlen(string);
+    for(size_t i=0; i<str_len; i++) {
+        *dest_buffer = string[i];
+        dest_buffer+= 2;
+    }
+    return descriptor_size;
+}
 
 uint8_t *descriptor_storage_alloc(uint16_t requested_num_bytes, bool commit)
 {

@@ -1,0 +1,54 @@
+
+enum GPIO_ID {
+    // HW VERSION
+    GPIO_ID_HW_VERSION_B0,
+    GPIO_ID_HW_VERSION_B1,
+    GPIO_ID_HW_VERSION_B2,
+
+    // DEBUG
+    GPIO_ID_LED_BLUE,
+    GPIO_ID_LED_RED,
+
+    // USB
+    GPIO_ID_VUSB_as_GPIO,
+
+    // SD
+    GPIO_ID_SD_DETECT_INV,
+
+    // POWER
+    GPIO_ID_DCDC_EN,
+    GPIO_ID_1V8_OK,
+    GPIO_ID_3V3_OK,
+    GPIO_ID_5V_OK,
+    GPIO_ID_10V_OK,
+
+    // ADC
+    GPIO_ID_SYNC_INV,
+    GPIO_ID_CLKDIV,
+    GPIO_ID_MODE0,
+    GPIO_ID_MODE1,
+    GPIO_ID_FORMAT0,
+    GPIO_ID_FORMAT1,
+    GPIO_ID_FORMAT2,
+    GPIO_ID_PWDN1_INV,
+    GPIO_ID_PWDN2_INV,
+    GPIO_ID_PWDN3_INV,
+    GPIO_ID_PWDN4_INV,
+    GPIO_ID_PWDN5_INV,
+    GPIO_ID_PWDN6_INV,
+    GPIO_ID_PWDN7_INV,
+    GPIO_ID_PWDN8_INV,
+
+    // IO
+    GPIO_ID_LED_power,
+    GPIO_ID_LED_running,
+    GPIO_ID_LED_standby,
+    GPIO_ID_LED_SDCard,
+    GPIO_ID_BTN_startStop,
+    GPIO_ID_EXT_startStop,
+
+    GPIO_ID_EXTRA_1,
+
+    GPIO_ID_MAX // This should be last: it is used to count
+};
+

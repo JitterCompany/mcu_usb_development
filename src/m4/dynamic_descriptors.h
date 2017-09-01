@@ -21,6 +21,10 @@
 #define CONTROL_ENDPOINT_SIZE (64)
 #define NO_DESCRIPTOR         (0)
 
+#define MANUFACTURER_INDEX 1
+#define PRODUCT_INDEX 2
+#define SERIAL_INDEX 3
+
 /* API overview:
  * The lines below show an overview of the available functions.
  * See the function declarations for documentation on how to use each function.
@@ -218,7 +222,7 @@ size_t descriptor_string_size(const char *const string);
  * 						0 if there is not enough space to store the string
  * 						descriptor or the string itself is 0
  */
-size_t descriptor_from_string(const void **result_desc,
+size_t descriptor_from_string(const USBDescriptorString **result_desc,
                               const char *const string);
 
 
