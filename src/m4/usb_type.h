@@ -106,6 +106,12 @@ typedef struct {
 	const usb_speed_t speed;
 } usb_configuration_t;
 
+typedef struct {
+	const uint8_t* descriptor;
+	const uint32_t number;
+	const usb_speed_t speed;
+} USBConfiguration;
+
 /** Enum for possible Class, Subclass and Protocol values of device and interface descriptors. */
 enum USBDescriptor_ClassSubclassProtocol
 {
@@ -240,6 +246,9 @@ typedef struct {
 	const USBDescriptorString **descriptor_strings;
 	const uint8_t* const qualifier_descriptor;
 	
+	USBConfiguration* (*configurations)[];
+	const USBConfiguration* configuration; 	// Pointer to current configuration
+	uint8_t controller; 				// USB0 or USB1 peripheral;
 } USBDevice;
 
 typedef struct {
@@ -262,6 +271,21 @@ struct usb_endpoint_t {
 	usb_endpoint_t* const out;
 	void (*setup_complete)(usb_endpoint_t* const endpoint);
 	void (*transfer_complete)(usb_endpoint_t* const endpoint);
+};
+
+typedef void (*Endpoint_cb)(usb_endpoint_t* const endpoint);
+typedef struct USBEndpoint USBEndpoint;
+struct USBEndpoint {
+	usb_setup_t setup;
+	uint8_t buffer[8];	// Buffer for use during IN stage.
+	uint_fast8_t address;
+	USBDevice *device;
+	USBEndpoint* in;
+	USBEndpoint* out;
+	Endpoint_cb setup_complete;
+	Endpoint_cb transfer_complete;
+	// void (*setup_complete)(USBEndpoint* const endpoint);
+	// void (*transfer_complete)(USBEndpoint* const endpoint);
 };
 
 

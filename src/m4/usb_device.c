@@ -4,8 +4,6 @@
 
 #include "usb_descriptor.h"
 
-USBDevice usb_device;
-
 usb_configuration_t usb0_configuration_high_speed = {
 	.number = 1,
 	.speed = USB_SPEED_HIGH,

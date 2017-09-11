@@ -107,9 +107,9 @@ bool descriptor_ok();
  * 								NB: add all required interfaces before adding
  * 								additional configurations
  */
-// USB_StdDescriptor_Configuration_Header_t *descriptor_make_configuration(
-//     USB_StdDescriptor_Device_t *device,
-//     uint8_t bConfigurationValue, uint8_t bmAttributes, uint8_t bMaxPower);
+ USBDescriptorConfiguration *descriptor_make_configuration(
+    USBDescriptorDevice *device,
+    uint8_t bConfigurationValue, uint8_t bmAttributes, uint8_t bMaxPower);
 
 
 /*
@@ -137,9 +137,9 @@ bool descriptor_ok();
  * 								NB: add all required endpoints before adding
  * 								additional interfaces or configurations
  */
-// USB_StdDescriptor_Interface_t *descriptor_make_interface(
-//     USB_StdDescriptor_Configuration_Header_t *config,
-//     uint8_t bInterfaceNumber, uint8_t bAlternateSetting);
+ USBDescriptorInterface *descriptor_make_interface(
+    USBDescriptorConfiguration *config,
+    uint8_t bInterfaceNumber, uint8_t bAlternateSetting);
 
 
 /*
@@ -172,11 +172,12 @@ bool descriptor_ok();
  * 								interface, additional interfaces or
  * 								configurations may be created.
  */
-// USB_StdDescriptor_Endpoint_t *descriptor_make_endpoint(
-//     USB_StdDescriptor_Configuration_Header_t *config,
-//     USB_StdDescriptor_Interface_t *interface,
-//     uint8_t bEndpointAddress, uint8_t bmAttributes,
-//     uint16_t wMaxPacketSize, uint8_t bInterval);
+ bool descriptor_make_endpoint(
+    USBEndpoint *endpoint,
+    USBDescriptorConfiguration *config,
+    USBDescriptorInterface *interface,
+    uint8_t bEndpointAddress, uint8_t bmAttributes,
+    uint16_t wMaxPacketSize, uint8_t bInterval);
 
 
 /*

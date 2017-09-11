@@ -129,7 +129,8 @@ static usb_request_status_t usb_send_descriptor_config(
 	usb_speed_t speed,
 	const uint8_t config_num
 ) {
-	usb_configuration_t** config = *(endpoint->device->configurations);
+	//usb_configuration_t** config = *(endpoint->device->configurations);
+	USBConfiguration** config = *(endpoint->device_new->configurations);
 	unsigned int i = 0;
 	for( ; *config != NULL; config++ ) {
 		if( (*config)->speed == speed) {
@@ -148,19 +149,14 @@ static usb_request_status_t usb_standard_request_get_descriptor_setup(
 ) {
 	switch( endpoint->setup.value_h ) {
 	case USB_DESCRIPTOR_TYPE_DEVICE:
-		//return usb_send_descriptor(endpoint, endpoint->device->descriptor);
 		return usb_send_descriptor(endpoint, (uint8_t*)endpoint->device_new->descriptor);
 		
 	case USB_DESCRIPTOR_TYPE_CONFIGURATION:
-		// TODO: Duplicated code. Refactor.
-		if( usb_speed(endpoint->device) == USB_SPEED_HIGH ) {
-			return usb_send_descriptor_config(endpoint, USB_SPEED_HIGH, endpoint->setup.value_l);
-		} else {
-			return usb_send_descriptor_config(endpoint, USB_SPEED_FULL, endpoint->setup.value_l);
-		}
+		return usb_send_descriptor_config(endpoint,  
+			usb_speed(endpoint->device), endpoint->setup.value_l);
 	
 	case USB_DESCRIPTOR_TYPE_DEVICE_QUALIFIER:
-		return usb_send_descriptor(endpoint, endpoint->device->qualifier_descriptor);
+		return usb_send_descriptor(endpoint, endpoint->device_new->qualifier_descriptor);
 
 	case USB_DESCRIPTOR_TYPE_OTHER_SPEED_CONFIGURATION:
 		// TODO: Duplicated code. Refactor.

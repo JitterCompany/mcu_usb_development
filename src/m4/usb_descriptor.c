@@ -35,18 +35,6 @@ uint8_t usb0_descriptor_device[] = {
 	0x01				   // bNumConfigurations
 };
 
-uint8_t usb0_descriptor_device_qualifier[] = {
-	10,					// bLength
-	USB_DESCRIPTOR_TYPE_DEVICE_QUALIFIER,	// bDescriptorType
-	USB_WORD(0x0200),			// bcdUSB
-	0x00,					// bDeviceClass
-	0x00,					// bDeviceSubClass
-	0x00,					// bDeviceProtocol
-	64,					// bMaxPacketSize0
-	0x01,					// bNumOtherSpeedConfigurations
-	0x00					// bReserved
-};
-
 uint8_t usb0_descriptor_configuration_full_speed[] = {
 	9,					// bLength
 	USB_DESCRIPTOR_TYPE_CONFIGURATION,	// bDescriptorType
@@ -128,26 +116,39 @@ uint8_t usb0_descriptor_string_languages[] = {
 };
 
 uint8_t usb0_descriptor_string_manufacturer[] = {
-	14,					// bLength
+	40,					// bLength
 	USB_DESCRIPTOR_TYPE_STRING,	    // bDescriptorType
-	'J', 0x00,
-	'i', 0x00,
-	't', 0x00,
-	't', 0x00,
+	'G', 0x00,
+	'r', 0x00,
 	'e', 0x00,
-	'r', 0x00
+	'a', 0x00,
+	't', 0x00,
+	' ', 0x00,
+	'S', 0x00,
+	'c', 0x00,
+	'o', 0x00,
+	't', 0x00,
+	't', 0x00,
+	' ', 0x00,
+	'G', 0x00,
+	'a', 0x00,
+	'd', 0x00,
+	'g', 0x00,
+	'e', 0x00,
+	't', 0x00,
+	's', 0x00,
 };
 
 uint8_t usb0_descriptor_string_product[] = {
 	18,						// bLength
 	USB_DESCRIPTOR_TYPE_STRING,		// bDescriptorType
-	'U', 0x00,
-	'S', 0x00,
-	'B', 0x00,
-	' ', 0x00,
-	'T', 0x00,
+	'G', 0x00,
+	'r', 0x00,
+	'e', 0x00,
+	'a', 0x00,
+	't', 0x00,
+	'F', 0x00,
 	'E', 0x00,
-	'S', 0x00,
 	'T', 0x00,
 };
 

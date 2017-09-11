@@ -62,136 +62,151 @@ USBDescriptorDevice *descriptor_make_device(uint16_t idVendor,
     device->iProduct = PRODUCT_INDEX;
     device->iSerialNumber = SERIAL_INDEX;
 
-    device->bNumConfigurations = 1; //TODO 0, dynamic
+    device->bNumConfigurations = 0;
     return device;
 }
 
-// USB_StdDescriptor_Configuration_Header_t *descriptor_make_configuration(
-//     USB_StdDescriptor_Device_t *device,
-//     uint8_t bConfigurationValue, uint8_t bmAttributes, uint8_t bMaxPower)
-// {
-//     uint8_t len = sizeof(USB_StdDescriptor_Configuration_Header_t);
-//     USB_StdDescriptor_Configuration_Header_t *config =
-//         (USB_StdDescriptor_Configuration_Header_t *)descriptor_storage_alloc(
-//             len, true);
+USBDescriptorConfiguration *descriptor_make_configuration(
+    USBDescriptorDevice *device,
+    uint8_t bConfigurationValue, uint8_t bmAttributes, uint8_t bMaxPower)
+{
+    uint8_t len = sizeof(USBDescriptorConfiguration);
+    USBDescriptorConfiguration *config =
+        (USBDescriptorConfiguration *)descriptor_storage_alloc(
+            len, true);
 
-//     if(device == NULL || config == NULL) {
-//         desc_storage.error_flag = true;
-//         return NULL;
-//     }
+    if(device == NULL || config == NULL) {
+        desc_storage.error_flag = true;
+        return NULL;
+    }
 
-//     device->bNumConfigurations++;
+    device->bNumConfigurations++;
 
-//     config->bLength = len;
-//     config->bDescriptorType = DTYPE_Configuration;
-//     config->wTotalLength = len; //
-//     config->bNumInterfaces = 0; // updated when adding interfaces
-//     config->bConfigurationValue = bConfigurationValue;
-//     // bit 7 is reserved and must be high (see USB standard)
-//     config->bmAttributes = (1 << 7) | bmAttributes;
-//     config->bMaxPower = bMaxPower;
+    config->bLength = len;
+    config->bDescriptorType = USB_DESCRIPTOR_TYPE_CONFIGURATION;
+    config->wTotalLength = len; //
+    config->bNumInterfaces = 0; // updated when adding interfaces
+    config->bConfigurationValue = bConfigurationValue;
+    // bit 7 is reserved and must be high (see USB standard)
+    config->bmAttributes = (1 << 7) | bmAttributes;
+    config->bMaxPower = bMaxPower;
 
-//     return config;
-// }
+    return config;
+}
 
-// USB_StdDescriptor_Interface_t *descriptor_make_interface(
-//     USB_StdDescriptor_Configuration_Header_t *config,
-//     uint8_t bInterfaceNumber, uint8_t bAlternateSetting)
-// {
-//     if(config == NULL) {
-//         desc_storage.error_flag = true;
-//         return NULL;
-//     }
-//     /*
-//      * Descriptors should be in the same order as they are sent to the host.
-//      * The referenced config descriptor should be the last one in the buffer
-//      * up to here.
-//      *
-//      * Referencing a config descriptor before the last one would
-//      * either overwrite these existing descriptor(s) or
-//      * need to shift the existing descriptors down in the buffer, invalidating
-//      * pointers that the user program may still hold
-//      */
+USBDescriptorInterface *descriptor_make_interface(
+    USBDescriptorConfiguration *config,
+    uint8_t bInterfaceNumber, uint8_t bAlternateSetting)
+{
+    if(config == NULL) {
+        desc_storage.error_flag = true;
+        return NULL;
+    }
+    /*
+     * Descriptors should be in the same order as they are sent to the host.
+     * The referenced config descriptor should be the last one in the buffer
+     * up to here.
+     *
+     * Referencing a config descriptor before the last one would
+     * either overwrite these existing descriptor(s) or
+     * need to shift the existing descriptors down in the buffer, invalidating
+     * pointers that the user program may still hold
+     */
 
-//     uint16_t config_addr = ((uint8_t *)config - desc_storage.buffer);
-//     if(desc_storage.next_addr != (config_addr + config->wTotalLength)) {
-//         desc_storage.error_flag = true;
-//         return NULL;
-//     }
+    uint16_t config_addr = ((uint8_t *)config - desc_storage.buffer);
+    if(desc_storage.next_addr != (config_addr + config->wTotalLength)) {
+        desc_storage.error_flag = true;
+        return NULL;
+    }
 
-//     uint8_t len = sizeof(USB_StdDescriptor_Interface_t);
-//     USB_StdDescriptor_Interface_t *interface =
-//         (USB_StdDescriptor_Interface_t *)descriptor_storage_alloc(
-//             len, true);
+    uint8_t len = sizeof(USBDescriptorInterface);
+    USBDescriptorInterface *interface =
+        (USBDescriptorInterface *)descriptor_storage_alloc(
+            len, true);
 
-//     if(interface == NULL) {
-//         desc_storage.error_flag = true;
-//         return NULL;
-//     }
-//     config->wTotalLength+= len;
-//     config->bNumInterfaces++;
+    if(interface == NULL) {
+        desc_storage.error_flag = true;
+        return NULL;
+    }
+    config->wTotalLength+= len;
+    config->bNumInterfaces++;
 
-//     interface->bLength = len;
-//     interface->bDescriptorType = DTYPE_Interface;
-//     interface->bInterfaceNumber = bInterfaceNumber;
-//     interface->bAlternateSetting = bAlternateSetting;
-//     interface->bNumEndpoints = 0;
-//     interface->bInterfaceClass = USB_CSCP_VendorSpecificClass;
-//     interface->bInterfaceSubClass = USB_CSCP_VendorSpecificSubclass;
-//     interface->bInterfaceProtocol = USB_CSCP_VendorSpecificProtocol;
+    interface->bLength = len;
+    interface->bDescriptorType = USB_DESCRIPTOR_TYPE_INTERFACE;
+    interface->bInterfaceNumber = bInterfaceNumber;
+    interface->bAlternateSetting = bAlternateSetting;
+    interface->bNumEndpoints = 0;
+    interface->bInterfaceClass = USB_CSCP_VendorSpecificClass;
+    interface->bInterfaceSubClass = USB_CSCP_VendorSpecificSubclass;
+    interface->bInterfaceProtocol = USB_CSCP_VendorSpecificProtocol;
 
-//     return interface;
-// }
+    return interface;
+}
 
-// USB_StdDescriptor_Endpoint_t *descriptor_make_endpoint(
-//     USB_StdDescriptor_Configuration_Header_t *config,
-//     USB_StdDescriptor_Interface_t *interface,
-//     uint8_t bEndpointAddress, uint8_t bmAttributes,
-//     uint16_t wMaxPacketSize, uint8_t bInterval)
-// {
-//     if(config == NULL || interface == NULL) {
-//         desc_storage.error_flag = true;
-//         return NULL;
-//     }
+bool descriptor_make_endpoint(
+    USBEndpoint *endpoint,
+    USBDescriptorConfiguration *config,
+    USBDescriptorInterface *interface,
+    uint8_t bEndpointAddress, uint8_t bmAttributes,
+    uint16_t wMaxPacketSize, uint8_t bInterval)
+{
+    if(config == NULL || interface == NULL) {
+        desc_storage.error_flag = true;
+        return NULL;
+    }
 
-//     uint8_t len = sizeof(USB_StdDescriptor_Endpoint_t);
+    uint8_t len = sizeof(USBDescriptorEndpoint);
 
-//     /*
-//      * No next descriptor can be present: adding endpoints to the current
-//      * interface would either overwrite these existing descriptor(s) or
-//      * need to shift the existing descriptors down, invalidating
-//      * pointers that the user program may still hold
-//      */
-//     uint16_t expected_next = ((uint8_t *)interface - desc_storage.buffer);
-//     expected_next+= interface->bLength;
-//     expected_next+= (interface->bNumEndpoints*len);
-//     if(desc_storage.next_addr > expected_next) {
-//         desc_storage.error_flag = true;
-//         return NULL;
-//     }
+    /*
+     * No next descriptor can be present: adding endpoints to the current
+     * interface would either overwrite these existing descriptor(s) or
+     * need to shift the existing descriptors down, invalidating
+     * pointers that the user program may still hold
+     */
+    uint16_t expected_next = ((uint8_t *)interface - desc_storage.buffer);
+    expected_next+= interface->bLength;
+    expected_next+= (interface->bNumEndpoints*len);
+    if(desc_storage.next_addr > expected_next) {
+        desc_storage.error_flag = true;
+        return NULL;
+    }
 
-//     USB_StdDescriptor_Endpoint_t *endpoint =
-//         (USB_StdDescriptor_Endpoint_t *)descriptor_storage_alloc(
-//             len, true);
+    USBDescriptorEndpoint *endpoint_desc =
+        (USBDescriptorEndpoint *)descriptor_storage_alloc(
+            len, true);
 
-//     if(endpoint == NULL) {
-//         desc_storage.error_flag = true;
-//         return NULL;
-//     }
+    if(endpoint == NULL) {
+        desc_storage.error_flag = true;
+        return NULL;
+    }
 
-//     config->wTotalLength+= len;
-//     interface->bNumEndpoints++;
-//     endpoint->bLength = len;
-//     endpoint->bDescriptorType = DTYPE_Endpoint;
+    config->wTotalLength+= len;
+    interface->bNumEndpoints++;
+    endpoint_desc->bLength = len;
+    endpoint_desc->bDescriptorType = USB_DESCRIPTOR_TYPE_ENDPOINT;
 
-//     endpoint->bEndpointAddress = bEndpointAddress;
-//     endpoint->bmAttributes = bmAttributes;
-//     endpoint->wMaxPacketSize = wMaxPacketSize;
-//     endpoint->bInterval = bInterval;
+    endpoint_desc->bEndpointAddress = bEndpointAddress;
+    endpoint_desc->bmAttributes = bmAttributes;
+    endpoint_desc->wMaxPacketSize = wMaxPacketSize;
+    endpoint_desc->bInterval = bInterval;
 
-//     return endpoint;
-// }
+    return true; //endpoint;
+}
 
+USBEndpoint* make_endpoint(USBEndpoint *endpoint, USBDescriptorEndpoint *endpoint_desc, 
+    USBDevice *device, USBEndpoint *in, USBEndpoint *out, 
+    Endpoint_cb setup_complete, Endpoint_cb transfer_complete
+    ) 
+{
+    endpoint->address = endpoint_desc->bEndpointAddress;
+    endpoint->device = device;
+    endpoint->in =  in;
+    endpoint->out =  out;
+    endpoint->setup_complete = setup_complete;
+    endpoint->transfer_complete = transfer_complete;
+
+    return endpoint;
+}
 
 uint8_t descriptor_string(const char *const string)
 {
