@@ -20,7 +20,7 @@
 // new USB stuff
 #include "usb_stack.h"
 #include "usb_standard_request.h"
-#include "usb_device.h"
+
 #include "usb_queue.h"
 #include "dynamic_descriptors.h"
 
@@ -50,7 +50,7 @@ extern void _vStackTop(void);
 extern void _pvHeapStart(void);
 
 void usb_configuration_changed(
-	usb_device_t* const device
+	USBDevice* const device
 ) {
 	
 	if( device->configuration->number == 1 ) {
@@ -153,14 +153,15 @@ USBConfiguration* new_usb0_configurations[] = {
     0,
 };
 
+USBDevice usb_device;
 usb_endpoint_t usb0_endpoint_control_out;
 usb_endpoint_t usb0_endpoint_control_in;
 USB_DECLARE_QUEUE(usb0_endpoint_control_out);
 USB_DECLARE_QUEUE(usb0_endpoint_control_in);//
 usb_endpoint_t usb0_endpoint_control_out = {
     .address = 0x00,
-    .device = &usb_devices[0],
-    .device_new = &usb_device,
+    .device = &usb_device,
+    //.device_new = &usb_device,
     .in = &usb0_endpoint_control_in,
     .out = &usb0_endpoint_control_out,
     .setup_complete = usb_setup_complete,
@@ -170,8 +171,8 @@ USB_DEFINE_QUEUE(usb0_endpoint_control_out, 4);
 
 usb_endpoint_t usb0_endpoint_control_in = {
     .address = 0x80,
-    .device = &usb_devices[0],
-    .device_new = &usb_device,	
+    .device = &usb_device,
+    //.device_new = &usb_device,	
     .in = &usb0_endpoint_control_in,
     .out = &usb0_endpoint_control_out,
     .setup_complete = 0,

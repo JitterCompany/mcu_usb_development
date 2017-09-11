@@ -5,7 +5,7 @@
 #include "usb_request.h"
 
 void usb_set_configuration_changed_cb(
-        void (*callback)(usb_device_t* const)
+        void (*callback)(USBDevice* const)
 );
 
 usb_request_status_t usb_standard_request(
@@ -26,7 +26,7 @@ usb_transfer_type_t usb_endpoint_descriptor_transfer_type(
 );
 
 bool usb_set_configuration(
-	usb_device_t* const device,
+	USBDevice* const device,
 	const uint_fast8_t configuration_number
 );
 

@@ -38,16 +38,16 @@ usb_transfer_type_t usb_endpoint_descriptor_transfer_type(
 	return (endpoint_descriptor[3] & 0x3);
 }
 
-void (*usb_configuration_changed_cb)(usb_device_t* const) = NULL;
+void (*usb_configuration_changed_cb)(USBDevice* const) = NULL;
 
 void usb_set_configuration_changed_cb(
-	void (*callback)(usb_device_t* const)
+	void (*callback)(USBDevice* const)
 ) {
 	usb_configuration_changed_cb = callback;
 }
 
 bool usb_set_configuration(
-	usb_device_t* const device,
+	USBDevice* const device,
 	const uint_fast8_t configuration_number
 ) {
 
@@ -115,9 +115,9 @@ static usb_request_status_t usb_send_descriptor_string(
 	// 		return usb_send_descriptor(endpoint, endpoint->device->descriptor_strings[i]);
 	// 	}
 	// }
-	for( uint_fast8_t i=0; endpoint->device_new->descriptor_strings[i] != 0; i++ ) {
+	for( uint_fast8_t i=0; endpoint->device->descriptor_strings[i] != 0; i++ ) {
 		if( i == index ) {
-			return usb_send_descriptor(endpoint, (uint8_t*)endpoint->device_new->descriptor_strings[i]);
+			return usb_send_descriptor(endpoint, (uint8_t*)endpoint->device->descriptor_strings[i]);
 		}
 	}
 
@@ -130,7 +130,7 @@ static usb_request_status_t usb_send_descriptor_config(
 	const uint8_t config_num
 ) {
 	//usb_configuration_t** config = *(endpoint->device->configurations);
-	USBConfiguration** config = *(endpoint->device_new->configurations);
+	USBConfiguration** config = *(endpoint->device->configurations);
 	unsigned int i = 0;
 	for( ; *config != NULL; config++ ) {
 		if( (*config)->speed == speed) {
@@ -149,14 +149,14 @@ static usb_request_status_t usb_standard_request_get_descriptor_setup(
 ) {
 	switch( endpoint->setup.value_h ) {
 	case USB_DESCRIPTOR_TYPE_DEVICE:
-		return usb_send_descriptor(endpoint, (uint8_t*)endpoint->device_new->descriptor);
+		return usb_send_descriptor(endpoint, (uint8_t*)endpoint->device->descriptor);
 		
 	case USB_DESCRIPTOR_TYPE_CONFIGURATION:
 		return usb_send_descriptor_config(endpoint,  
 			usb_speed(endpoint->device), endpoint->setup.value_l);
 	
 	case USB_DESCRIPTOR_TYPE_DEVICE_QUALIFIER:
-		return usb_send_descriptor(endpoint, endpoint->device_new->qualifier_descriptor);
+		return usb_send_descriptor(endpoint, endpoint->device->qualifier_descriptor);
 
 	case USB_DESCRIPTOR_TYPE_OTHER_SPEED_CONFIGURATION:
 		// TODO: Duplicated code. Refactor.
