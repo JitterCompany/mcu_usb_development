@@ -22,7 +22,6 @@
 #include "usb_standard_request.h"
 #include "usb_device.h"
 #include "usb_queue.h"
-#include "usb_endpoint.h"
 #include "dynamic_descriptors.h"
 
 #define CPU_FREQ 60000000
@@ -263,9 +262,9 @@ int main(void)
     // usb_device.configurations = &new_usb0_configurations;
     
     usb_set_configuration_changed_cb(usb_configuration_changed);
-	usb_peripheral_reset(&usb_devices[0]);
+	usb_peripheral_reset(&usb_device);
 	
-    usb_device_init(&usb_devices[0]);
+    usb_device_init(&usb_device);
    
 	
 	usb_queue_init(&usb0_endpoint_control_out_queue);
@@ -274,7 +273,7 @@ int main(void)
     usb_endpoint_init(&usb0_endpoint_control_out);
 	usb_endpoint_init(&usb0_endpoint_control_in);
 
-    usb_run(&usb_devices[0]);
+    usb_run(&usb_device);
 
     while (1) {         
 

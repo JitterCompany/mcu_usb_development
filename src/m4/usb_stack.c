@@ -15,6 +15,8 @@
 usb_queue_head_t usb_qh0[12] ATTR_ALIGNED(2048);
 usb_queue_head_t usb_qh1[12] ATTR_ALIGNED(2048);
 
+static USBDevice *devices[2];
+
 #define USB_QH_INDEX(endpoint_address) (((endpoint_address & 0xF) * 2) + ((endpoint_address >> 7) & 1))
 
 usb_queue_head_t* usb_queue_head(
@@ -697,7 +699,7 @@ void usb_device_init(
 	usb_device_t* const device
 ) {
 	if( device->controller == 0 ) {
-		//usb_devices[0] = device;
+		devices[0] = device;
 	
 		Chip_Clock_DisablePLL(CGU_USB_PLL);
 		
@@ -741,7 +743,7 @@ void usb_device_init(
 			;
 	}
 	if( device->controller == 1 ) {
-		//usb_devices[1] = device;
+		devices[1] = device;
 	
 		//TODO init USB1 clocking
 		//usb_phy_enable(device);
@@ -918,7 +920,7 @@ static void usb_check_for_transfer_events(const usb_device_t* const device) {
 }
 
 void USB0_IRQHandler() {
-	const uint32_t status = usb_get_status(&usb_devices[0]);
+	const uint32_t status = usb_get_status(devices[0]);
 	
 	if( status == 0 ) {
 		// Nothing to do.
@@ -931,8 +933,8 @@ void USB0_IRQHandler() {
 		// - Short packet detected.
 		// - SETUP packet received.
 
-		usb_check_for_setup_events(&usb_devices[0]);
-		usb_check_for_transfer_events(&usb_devices[0]);
+		usb_check_for_setup_events(devices[0]);
+		usb_check_for_transfer_events(devices[0]);
 		
 		// TODO: Reset ignored ENDPTSETUPSTAT and ENDPTCOMPLETE flags?
 	}
@@ -952,7 +954,7 @@ void USB0_IRQHandler() {
 
 	if( status & USB0_USBSTS_D_URI ) {
 		// USB reset received.
-		usb_bus_reset(&usb_devices[0]);
+		usb_bus_reset(devices[0]);
 	}
 
 	if( status & USB0_USBSTS_D_UEI ) {
@@ -971,7 +973,7 @@ void USB0_IRQHandler() {
 
 void USB1_IRQHandler() {
   return;
-	const uint32_t status = usb_get_status(&usb_devices[1]);
+	const uint32_t status = usb_get_status(devices[1]);
 	
 	if( status == 0 ) {
 		// Nothing to do.
@@ -984,8 +986,8 @@ void USB1_IRQHandler() {
 		// - Short packet detected.
 		// - SETUP packet received.
 
-		usb_check_for_setup_events(&usb_devices[1]);
-		usb_check_for_transfer_events(&usb_devices[1]);
+		usb_check_for_setup_events(devices[1]);
+		usb_check_for_transfer_events(devices[1]);
 		
 		// TODO: Reset ignored ENDPTSETUPSTAT and ENDPTCOMPLETE flags?
 	}
@@ -1005,7 +1007,7 @@ void USB1_IRQHandler() {
 
 	if( status & USB1_USBSTS_D_URI ) {
 		// USB reset received.
-		usb_bus_reset(&usb_devices[1]);
+		usb_bus_reset(devices[1]);
 	}
 
 	if( status & USB1_USBSTS_D_UEI ) {

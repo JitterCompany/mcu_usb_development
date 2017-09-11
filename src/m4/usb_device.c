@@ -22,33 +22,13 @@ usb_configuration_t* usb0_configurations[] = {
 	0,
 };
 
-/* USB1 Experiment */
-usb_configuration_t usb1_configuration_full_speed = {
-	.number = 1,
-	.speed = USB_SPEED_FULL,
-	.descriptor = usb1_descriptor_configuration_full_speed,
-};
-
-usb_configuration_t* usb1_configurations[] = {
-	&usb1_configuration_full_speed,
-	0,
-};
-
 usb_device_t usb_devices[] = {
 	{
 		.descriptor = usb0_descriptor_device,
-		.descriptor_strings = usb0_descriptor_strings,
-		.qualifier_descriptor = usb0_descriptor_device_qualifier,
+		//.descriptor_strings = usb0_descriptor_strings,
+		//.qualifier_descriptor = usb0_descriptor_device_qualifier,
 		.configurations = &usb0_configurations,
 		.configuration = 0,
 		.controller = 0,
-	},
-	{
-		.descriptor = usb1_descriptor_device,
-		.descriptor_strings = usb1_descriptor_strings,
-		.qualifier_descriptor = usb1_descriptor_device_qualifier,
-		.configurations = &usb1_configurations,
-		.configuration = 0,
-		.controller = 1,
 	}
 };
