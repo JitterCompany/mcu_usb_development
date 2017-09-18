@@ -192,28 +192,6 @@ bool descriptor_make_endpoint(
     return true; //endpoint;
 }
 
-USBEndpoint* make_endpoint(USBEndpoint *endpoint, uint8_t bEndpointAddress, 
-    USBDevice *device, USBEndpoint *other_endpoint, 
-    Endpoint_cb setup_complete, Endpoint_cb transfer_complete
-    ) 
-{
-    endpoint->address = bEndpointAddress;
-    endpoint->device = device;
-   
-    endpoint->setup_complete = setup_complete;
-    endpoint->transfer_complete = transfer_complete;
-
-    // if IN endpoint
-    if (endpoint->address & 0x80) {
-        endpoint->in =  endpoint;
-        endpoint->out = other_endpoint;
-    } else {
-        endpoint->in = other_endpoint;
-        endpoint->out = endpoint;
-    }
-
-    return endpoint;
-}
 
 uint8_t descriptor_string(const char *const string)
 {

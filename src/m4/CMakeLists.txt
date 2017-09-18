@@ -58,6 +58,10 @@ CPM_AddModule("fatfs_lib"
     GIT_REPOSITORY "https://github.com/JitterCompany/fatfs_lib.git"
     GIT_TAG "1.2")
 
+CPM_AddModule("one_time_heap"
+    GIT_REPOSITORY "https://github.com/JitterCompany/one_time_heap.git"
+    GIT_TAG "2.0")
+
 CPM_Finish()
 
 

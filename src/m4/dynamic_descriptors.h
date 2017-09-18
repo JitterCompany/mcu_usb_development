@@ -178,10 +178,6 @@ bool descriptor_ok();
     uint8_t bEndpointAddress, uint8_t bmAttributes,
     uint16_t wMaxPacketSize, uint8_t bInterval);
 
-USBEndpoint* make_endpoint(USBEndpoint *endpoint, uint8_t bEndpointAddress, 
-    USBDevice *device, USBEndpoint *other_endpoint, 
-    Endpoint_cb setup_complete, Endpoint_cb transfer_complete
-    ); 
 
 /*
  * Create a descriptor string index from a string
@@ -202,7 +198,6 @@ USBEndpoint* make_endpoint(USBEndpoint *endpoint, uint8_t bEndpointAddress,
  * 						host that no string descriptor is available
  */
 uint8_t descriptor_string(const char *const string);
-
 
 
 

@@ -11,21 +11,23 @@ typedef void (*transfer_completion_cb)(void*, unsigned int);
 
 // This is an opaque datatype. Thou shall not touch these members.
 struct _usb_transfer_t {
-        struct _usb_transfer_t* next;
         usb_transfer_descriptor_t td ATTR_ALIGNED(64);
+        struct _usb_transfer_t* next;
         unsigned int maximum_length;
         struct _usb_queue_t* queue;
         transfer_completion_cb completion_cb;
         void* user_data;
 };
+typedef struct _usb_transfer_t USBTransfer;
 
 // This is an opaque datatype. Thou shall not touch these members.
 struct _usb_queue_t {
         struct USBEndpoint* endpoint;
-        const unsigned int pool_size;
+        unsigned int pool_size;
         usb_transfer_t* volatile free_transfers;
         usb_transfer_t* volatile active;
 };
+typedef struct _usb_queue_t USBQueue;
 
 #define USB_DECLARE_QUEUE(endpoint_name)                                \
         struct _usb_queue_t endpoint_name##_queue;
