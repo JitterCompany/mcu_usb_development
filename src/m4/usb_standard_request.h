@@ -9,12 +9,12 @@ void usb_set_configuration_changed_cb(
 );
 
 usb_request_status_t usb_standard_request(
-	usb_endpoint_t* const endpoint,
+	USBEndpoint* const endpoint,
 	const usb_transfer_stage_t stage
 );
 
 const uint8_t* usb_endpoint_descriptor(
-	const usb_endpoint_t* const endpoint
+	const USBEndpoint* const endpoint
 );
 
 uint_fast16_t usb_endpoint_descriptor_max_packet_size(

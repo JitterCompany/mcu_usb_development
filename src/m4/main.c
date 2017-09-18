@@ -25,11 +25,16 @@
 #include "dynamic_descriptors.h"
 
 #define CPU_FREQ 60000000
-#define TICKRATE_HZ (5)
+#define TICKRATE_HZ (1)
 #define member_size(type, member) sizeof(((type *)0)->member)
 
 static const usb_request_handler_fn vendor_request_handler[] = {};
 static const uint32_t vendor_request_handler_count = 0;
+
+static bool usb_init_done = false;
+
+USBEndpoint ep_1_in; 
+USBEndpoint ep_1_out; 
 
 const usb_request_handlers_t usb1_request_handlers = {
 	.standard = 0,
@@ -52,7 +57,12 @@ extern void _pvHeapStart(void);
 void usb_configuration_changed(
 	USBDevice* const device
 ) {
-	
+    status_led_toggle(YELLOW);
+    
+    usb_endpoint_init(&ep_1_in);
+    usb_endpoint_init(&ep_1_out);
+    usb_init_done = true;
+
 	if( device->configuration->number == 1 ) {
 		
 	} else {
@@ -78,13 +88,6 @@ void Timer1_init() {
 	NVIC_ClearPendingIRQ(TIMER1_IRQn);
 }
 
-void TIMER1_IRQHandler() {
-
-    if (Chip_TIMER_MatchPending(LPC_TIMER1, 1))     {
-		Chip_TIMER_ClearMatch(LPC_TIMER1, 1);
-        status_led_toggle(BLUE);
-    }
-}
 
 
 
@@ -154,14 +157,14 @@ USBConfiguration* new_usb0_configurations[] = {
 };
 
 USBDevice usb_device;
-usb_endpoint_t usb0_endpoint_control_out;
-usb_endpoint_t usb0_endpoint_control_in;
-USB_DECLARE_QUEUE(usb0_endpoint_control_out);
-USB_DECLARE_QUEUE(usb0_endpoint_control_in);//
-usb_endpoint_t usb0_endpoint_control_out = {
+
+USBEndpoint usb0_endpoint_control_out;
+USBEndpoint usb0_endpoint_control_in;
+//USB_DECLARE_QUEUE(usb0_endpoint_control_out);
+//USB_DECLARE_QUEUE(usb0_endpoint_control_in);//
+USBEndpoint usb0_endpoint_control_out = {
     .address = 0x00,
     .device = &usb_device,
-    //.device_new = &usb_device,
     .in = &usb0_endpoint_control_in,
     .out = &usb0_endpoint_control_out,
     .setup_complete = usb_setup_complete,
@@ -169,10 +172,9 @@ usb_endpoint_t usb0_endpoint_control_out = {
 };
 USB_DEFINE_QUEUE(usb0_endpoint_control_out, 4);
 
-usb_endpoint_t usb0_endpoint_control_in = {
+USBEndpoint usb0_endpoint_control_in = {
     .address = 0x80,
     .device = &usb_device,
-    //.device_new = &usb_device,	
     .in = &usb0_endpoint_control_in,
     .out = &usb0_endpoint_control_out,
     .setup_complete = 0,
@@ -181,15 +183,15 @@ usb_endpoint_t usb0_endpoint_control_in = {
 static USB_DEFINE_QUEUE(usb0_endpoint_control_in, 4);
 
 uint8_t usb0_descriptor_device_qualifier[] = {
-	10,					// bLength
+	10,					                    // bLength
 	USB_DESCRIPTOR_TYPE_DEVICE_QUALIFIER,	// bDescriptorType
-	USB_WORD(0x0200),			// bcdUSB
-	0x00,					// bDeviceClass
-	0x00,					// bDeviceSubClass
-	0x00,					// bDeviceProtocol
-	64,					// bMaxPacketSize0
-	0x01,					// bNumOtherSpeedConfigurations
-	0x00					// bReserved
+	USB_WORD(0x0200),			            // bcdUSB
+	0x00,					                // bDeviceClass
+	0x00,					                // bDeviceSubClass
+	0x00,					                // bDeviceProtocol
+	64,					                    // bMaxPacketSize0
+	0x00,					                // bNumOtherSpeedConfigurations
+	0x00					                // bReserved
 };
 
 USBDevice usb_device = 
@@ -202,6 +204,13 @@ USBDevice usb_device =
     .controller = 0,
 };
 
+
+void ep_transfer_complete_cb(USBEndpoint* const endpoint)
+{
+    status_led_set(RED, true);
+    usb_queue_transfer_complete(endpoint);
+}
+
 int main(void)
 {
     
@@ -210,7 +219,6 @@ int main(void)
     char serial_string[] = "0xDEADCAFE";
     USBDescriptorDevice *device_descriptor =
     descriptor_make_device(VENDOR_ID, PRODUCT_ID, PRODUCT_REV);
-
 
     const USBDescriptorString *manufacturer_str_desc;
     const USBDescriptorString *product_str_desc;
@@ -223,9 +231,6 @@ int main(void)
     descriptor_strings[PRODUCT_INDEX] = product_str_desc;
     descriptor_strings[SERIAL_INDEX] = serial_str_desc;
     
-    // volatile bool d = false;
-    // while(!d);
-    
     USBDescriptorConfiguration *config_descriptor =
     descriptor_make_configuration(device_descriptor, 1,
         USB_CONFIG_ATTR_BUSPOWERED, USB_CONFIG_POWER_MA(500));
@@ -233,57 +238,86 @@ int main(void)
     USBDescriptorInterface * interface_descriptor = 
     descriptor_make_interface(config_descriptor, 0, 0);
     
-    USBEndpoint ep_1_in; 
-    USBEndpoint ep_1_out; 
-    descriptor_make_endpoint(&ep_1_in,
+
+    descriptor_make_endpoint(
         config_descriptor, 
         interface_descriptor,
         0x81,
         USB_TRANSFER_TYPE_BULK,
         512,
-        0 // no NAK?
+        1 // no NAK?
     );
+    make_endpoint(&ep_1_in, 0x81, &usb_device, &ep_1_out, NULL, ep_transfer_complete_cb);
+    USB_DEFINE_QUEUE(ep_1_in, 4);
     
-    descriptor_make_endpoint(&ep_1_out,
+    descriptor_make_endpoint(
         config_descriptor, 
         interface_descriptor,
         0x01,
         USB_TRANSFER_TYPE_BULK,
         512,
-        0 // no NAK?
+        1 // no NAK?
     );
-        
+    make_endpoint(&ep_1_out, 0x01, &usb_device, &ep_1_in, NULL, ep_transfer_complete_cb);    
+    USB_DEFINE_QUEUE(ep_1_out, 4);
+    
     usb0_configuration.descriptor = (uint8_t*)config_descriptor;
 
-    
     usb_device.descriptor = device_descriptor;
     usb_device.descriptor_strings = descriptor_strings;
-    // usb_device.configuration = 0;
-    // usb_device.controller = 0;
-    // usb_device.configurations = &new_usb0_configurations;
     
     usb_set_configuration_changed_cb(usb_configuration_changed);
 	usb_peripheral_reset(&usb_device);
-	
+    
     usb_device_init(&usb_device);
    
 	
 	usb_queue_init(&usb0_endpoint_control_out_queue);
-	usb_queue_init(&usb0_endpoint_control_in_queue);
+    usb_queue_init(&usb0_endpoint_control_in_queue);
+    
+    usb_queue_init(&ep_1_in_queue);
+    usb_queue_init(&ep_1_out_queue);
 
     usb_endpoint_init(&usb0_endpoint_control_out);
 	usb_endpoint_init(&usb0_endpoint_control_in);
 
     usb_run(&usb_device);
+    
 
+    status_led_set(GREEN, 1);
     while (1) {         
 
         if(!stack_valid(&_pvHeapStart, stack_value)) {
             status_led_set(RED, 1);
         }
-        status_led_set(GREEN, 1);
 
     }
     return 0;
 }
 
+void transfer_complete_cb(void* user_data, unsigned int n)
+{
+    status_led_set(YELLOW, true);
+    
+    //usb_endpoint_flush(&ep_1_in);
+    //usb_queue_flush_endpoint(&ep_1_in);
+}
+
+void TIMER1_IRQHandler() {
+    
+        if (Chip_TIMER_MatchPending(LPC_TIMER1, 1))     {
+            Chip_TIMER_ClearMatch(LPC_TIMER1, 1);
+            
+            if (usb_init_done) {
+                status_led_toggle(BLUE);
+                char str[] = "Hello Jitter USB\n";
+                int ret = usb_transfer_schedule(&ep_1_in, str, strlen(str), 
+                    transfer_complete_cb, NULL);
+                if (ret < 0) {
+                    //status_led_set(RED, true);
+                }
+            }
+    
+    
+        }
+    }

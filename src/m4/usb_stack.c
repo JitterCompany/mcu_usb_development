@@ -27,11 +27,11 @@ usb_queue_head_t* usb_queue_head(
 	return &endpoint_list[USB_QH_INDEX(endpoint_address)];
 }
 
-usb_endpoint_t* usb_endpoint_from_address(
+USBEndpoint* usb_endpoint_from_address(
 	const uint_fast8_t endpoint_address,
 	const USBDevice* const device
 ) {
-	return (usb_endpoint_t*)usb_queue_head(endpoint_address, device)->_reserved_0;
+	return (USBEndpoint*)usb_queue_head(endpoint_address, device)->_reserved_0;
 }
 
 uint_fast8_t usb_endpoint_address(
@@ -60,35 +60,6 @@ void usb_peripheral_reset(const USBDevice* const device) {
 	}
 
 }
-
-// static void usb_phy_enable(const USBDevice* const device) {
-// 	if(device->controller == 0) {
-// 		CREG_CREG0 &= ~CREG_CREG0_USB0PHY;
-// 	}
-// 	if(device->controller == 1) {
-// 		/* Enable the USB1 FS PHY. */
-// 		SCU_SFSUSB = 0x12;
-
-// #ifdef BOARD_CAPABILITY_USB1_SENSE_VBUS
-// 		/*
-// 		 * HACK: The USB1 PHY will only run if we tell it VBUS is
-// 		 * present by setting SFSUSB bit 5. Shortly, we should use
-// 		 * the USB1_SENSE pin to drive an interrupt that adjusts this
-// 		 * bit to match the sense pin's value. For now, we'll lie and
-// 		 * say VBUS is always there.
-// 		 */
-// 		SCU_SFSUSB |= (1 << 5);
-// #else
-// 		/*
-// 		 * If we don't have the ability to sense VBUS, lie and pretend that we
-// 		 * always detect it. This actually works pretty perfectly for pretty much
-// 		 * all USB hosts, even if it's in violation of the spec-- which says we
-// 		 * shouldn't drive current through D+/D- until VBUS is present.
-// 		 */
-// 		SCU_SFSUSB |= (1 << 5);
-// #endif
-// 	}
-// }
 
 static void usb_clear_pending_interrupts(const uint32_t mask,
                                          const USBDevice *const device)
@@ -161,7 +132,7 @@ static void usb_flush_all_primed_endpoints(const USBDevice* const device) {
 }
 
 static void usb_endpoint_set_type(
-    const usb_endpoint_t* const endpoint,
+    const USBEndpoint* const endpoint,
     const usb_transfer_type_t transfer_type
 ) {
     // NOTE: UM10503 section 23.6.24 "Endpoint 1 to 5 control registers" says
@@ -189,7 +160,7 @@ static void usb_endpoint_set_type(
 }
 
 static void usb_endpoint_enable(
-    const usb_endpoint_t* const endpoint
+    const USBEndpoint* const endpoint
 ) {
     const uint_fast8_t endpoint_number = usb_endpoint_number(endpoint->address);
 	if( endpoint->device->controller == 0 ) {
@@ -209,7 +180,7 @@ static void usb_endpoint_enable(
 }
 
 static void usb_endpoint_clear_pending_interrupts(
-    const usb_endpoint_t* const endpoint
+    const USBEndpoint* const endpoint
 ) {
     const uint_fast8_t endpoint_number = usb_endpoint_number(endpoint->address);
 	if(endpoint->device->controller == 0) {
@@ -233,7 +204,7 @@ static void usb_endpoint_clear_pending_interrupts(
 }
 
 void usb_endpoint_disable(
-	const usb_endpoint_t* const endpoint
+	const USBEndpoint* const endpoint
 ) {
 	const uint_fast8_t endpoint_number = usb_endpoint_number(endpoint->address);
 	if(endpoint->device->controller == 0) {
@@ -250,13 +221,14 @@ void usb_endpoint_disable(
 			USB1_ENDPTCTRL(endpoint_number) &= ~(USB1_ENDPTCTRL_RXE);
 		}
 	}
-        usb_queue_flush_endpoint(endpoint);
+
+    usb_queue_flush_endpoint(endpoint);
 	usb_endpoint_clear_pending_interrupts(endpoint);
 	usb_endpoint_flush(endpoint);
 }
 
 void usb_endpoint_prime(
-	const usb_endpoint_t* const endpoint,
+	const USBEndpoint* const endpoint,
 	usb_transfer_descriptor_t* const first_td	
 ) {
 	usb_queue_head_t* const qh = usb_queue_head(endpoint->address, endpoint->device);
@@ -286,7 +258,7 @@ void usb_endpoint_prime(
 }
 
 static bool usb_endpoint_is_priming(
-	const usb_endpoint_t* const endpoint
+	const USBEndpoint* const endpoint
 ) {
 	const uint_fast8_t endpoint_number = usb_endpoint_number(endpoint->address);
 	if(endpoint->device->controller == 0) {
@@ -308,7 +280,7 @@ static bool usb_endpoint_is_priming(
 // Schedule an already filled-in transfer descriptor for execution on
 // the given endpoint, waiting until the endpoint has finished.
 void usb_endpoint_schedule_wait(
-	const usb_endpoint_t* const endpoint,
+	const USBEndpoint* const endpoint,
 	usb_transfer_descriptor_t* const td
 ) {
 	// Ensure that endpoint is ready to be primed.
@@ -327,7 +299,7 @@ void usb_endpoint_schedule_wait(
 // tail of the endpoint's TD queue. Moreover, the user is responsible
 // for setting the TERMINATE bit of next_dtd_pointer if needed.
 void usb_endpoint_schedule_append(
-	const usb_endpoint_t* const endpoint,
+	const USBEndpoint* const endpoint,
 	usb_transfer_descriptor_t* const tail_td,
 	usb_transfer_descriptor_t* const new_td
 ) {
@@ -361,7 +333,7 @@ void usb_endpoint_schedule_append(
 }
 
 void usb_endpoint_flush(
-	const usb_endpoint_t* const endpoint
+	const USBEndpoint* const endpoint
 ) {
 	const uint_fast8_t endpoint_number = usb_endpoint_number(endpoint->address);
 	usb_queue_flush_endpoint(endpoint);
@@ -386,7 +358,7 @@ void usb_endpoint_flush(
 }
 /*
 static bool usb_endpoint_is_flushing(
-	const usb_endpoint_t* const endpoint
+	const USBEndpoint* const endpoint
 ) {
 	const uint_fast8_t endpoint_number = usb_endpoint_number(endpoint->address);
 	if( usb_endpoint_is_in(endpoint->address) ) {
@@ -397,7 +369,7 @@ static bool usb_endpoint_is_flushing(
 }
 */
 bool usb_endpoint_is_ready(
-	const usb_endpoint_t* const endpoint
+	const USBEndpoint* const endpoint
 ) {
 	const uint_fast8_t endpoint_number = usb_endpoint_number(endpoint->address);
 	if(endpoint->device->controller == 0) {
@@ -416,7 +388,7 @@ bool usb_endpoint_is_ready(
 }
 
 bool usb_endpoint_is_complete(
-	const usb_endpoint_t* const endpoint
+	const USBEndpoint* const endpoint
 ) {
 	const uint_fast8_t endpoint_number = usb_endpoint_number(endpoint->address);
 	if(endpoint->device->controller == 0) {
@@ -435,7 +407,7 @@ bool usb_endpoint_is_complete(
 }
 
 void usb_endpoint_stall(
-	const usb_endpoint_t* const endpoint
+	const USBEndpoint* const endpoint
 ) {
 	// Endpoint is to be stalled as a pair -- both OUT and IN.
 	// See UM10503 section 23.10.5.2 "Stalling"
@@ -789,7 +761,7 @@ static void copy_setup(usb_setup_t* const dst, const volatile uint8_t* const src
 
 
 void usb_endpoint_init_without_descriptor(
-	const usb_endpoint_t* const endpoint,
+	const USBEndpoint* const endpoint,
   uint_fast16_t max_packet_size,
   usb_transfer_type_t transfer_type
 ) {
@@ -827,7 +799,7 @@ void usb_endpoint_init_without_descriptor(
 
 
 void usb_endpoint_init(
-	const usb_endpoint_t* const endpoint
+	const USBEndpoint* const endpoint
 ) {
 	usb_endpoint_flush(endpoint);
 
@@ -855,7 +827,7 @@ static void usb_check_for_setup_events(const USBDevice* const device) {
 				endptsetupstat_bit = USB1_ENDPTSETUPSTAT_ENDPTSETUPSTAT(1 << i);
 			}
 			if( endptsetupstat & endptsetupstat_bit ) {
-				usb_endpoint_t* const endpoint = 
+				USBEndpoint* const endpoint = 
 					usb_endpoint_from_address(
 						usb_endpoint_address(USB_TRANSFER_DIRECTION_OUT, i),
 						device);
@@ -890,7 +862,7 @@ static void usb_check_for_transfer_events(const USBDevice* const device) {
 			}
 			if( endptcomplete & endptcomplete_out_bit ) {
 				usb_clear_endpoint_complete(endptcomplete_out_bit, device);
-			 	usb_endpoint_t* const endpoint = 
+			 	USBEndpoint* const endpoint = 
 					usb_endpoint_from_address(
 						usb_endpoint_address(USB_TRANSFER_DIRECTION_OUT, i),
 						device);
@@ -906,13 +878,18 @@ static void usb_check_for_transfer_events(const USBDevice* const device) {
 				endptcomplete_in_bit = USB1_ENDPTCOMPLETE_ETCE(1 << i);
 			}
 			if( endptcomplete & endptcomplete_in_bit ) {
+				if (i > 0) {
+					status_led_toggle(YELLOW);				
+
+				}
+				
 				usb_clear_endpoint_complete(endptcomplete_in_bit, device);
-				usb_endpoint_t* const endpoint = 
-					usb_endpoint_from_address(
-						usb_endpoint_address(USB_TRANSFER_DIRECTION_IN, i),
-						device);
-				if( endpoint && endpoint->transfer_complete ) {
-					endpoint->transfer_complete(endpoint);
+				USBEndpoint* const endpoint = 
+				usb_endpoint_from_address(
+					usb_endpoint_address(USB_TRANSFER_DIRECTION_IN, i),
+					device);
+					if( endpoint && endpoint->transfer_complete ) {
+						endpoint->transfer_complete(endpoint);
 				}
 			}
 		}

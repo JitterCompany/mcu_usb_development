@@ -144,7 +144,6 @@ USBDescriptorInterface *descriptor_make_interface(
 }
 
 bool descriptor_make_endpoint(
-    USBEndpoint *endpoint,
     USBDescriptorConfiguration *config,
     USBDescriptorInterface *interface,
     uint8_t bEndpointAddress, uint8_t bmAttributes,
@@ -175,10 +174,10 @@ bool descriptor_make_endpoint(
         (USBDescriptorEndpoint *)descriptor_storage_alloc(
             len, true);
 
-    if(endpoint == NULL) {
-        desc_storage.error_flag = true;
-        return NULL;
-    }
+    // if(endpoint == NULL) {
+    //     desc_storage.error_flag = true;
+    //     return NULL;
+    // }
 
     config->wTotalLength+= len;
     interface->bNumEndpoints++;
@@ -193,17 +192,25 @@ bool descriptor_make_endpoint(
     return true; //endpoint;
 }
 
-USBEndpoint* make_endpoint(USBEndpoint *endpoint, USBDescriptorEndpoint *endpoint_desc, 
-    USBDevice *device, USBEndpoint *in, USBEndpoint *out, 
+USBEndpoint* make_endpoint(USBEndpoint *endpoint, uint8_t bEndpointAddress, 
+    USBDevice *device, USBEndpoint *other_endpoint, 
     Endpoint_cb setup_complete, Endpoint_cb transfer_complete
     ) 
 {
-    endpoint->address = endpoint_desc->bEndpointAddress;
+    endpoint->address = bEndpointAddress;
     endpoint->device = device;
-    endpoint->in =  in;
-    endpoint->out =  out;
+   
     endpoint->setup_complete = setup_complete;
     endpoint->transfer_complete = transfer_complete;
+
+    // if IN endpoint
+    if (endpoint->address & 0x80) {
+        endpoint->in =  endpoint;
+        endpoint->out = other_endpoint;
+    } else {
+        endpoint->in = other_endpoint;
+        endpoint->out = endpoint;
+    }
 
     return endpoint;
 }

@@ -5,7 +5,7 @@
 #include <stdbool.h>
 
 static void usb_request(
-	usb_endpoint_t* const endpoint,
+	USBEndpoint* const endpoint,
 	const usb_transfer_stage_t stage
 ) {
 	const usb_request_handlers_t* usb_request_handlers;
@@ -48,13 +48,13 @@ static void usb_request(
 }
 
 void usb_setup_complete(
-	usb_endpoint_t* const endpoint
+	USBEndpoint* const endpoint
 ) {
 	usb_request(endpoint, USB_TRANSFER_STAGE_SETUP);
 }
 
 void usb_control_out_complete(
-	usb_endpoint_t* const endpoint
+	USBEndpoint* const endpoint
 ) {
 	const bool device_to_host =
 		endpoint->setup.request_type >> USB_SETUP_REQUEST_TYPE_DATA_TRANSFER_DIRECTION_shift;
@@ -67,7 +67,7 @@ void usb_control_out_complete(
 }
 
 void usb_control_in_complete(
-	usb_endpoint_t* const endpoint
+	USBEndpoint* const endpoint
 ) {
 	const bool device_to_host =
 		endpoint->setup.request_type >> USB_SETUP_REQUEST_TYPE_DATA_TRANSFER_DIRECTION_shift;

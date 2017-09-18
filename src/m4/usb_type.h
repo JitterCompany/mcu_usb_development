@@ -4,9 +4,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-//#define ARCH_LITTLE_ENDIAN
-//#include "Endianness.h"
-
 // TODO: Move this to some common compiler-tricks location.
 #define ATTR_PACKED __attribute__((packed))
 #define ATTR_ALIGNED(x)	__attribute__ ((aligned(x)))
@@ -99,12 +96,6 @@ typedef enum {
 	USB_SPEED_HIGH = 2,
 	USB_SPEED_SUPER = 3,
 } usb_speed_t;
-
-typedef struct {
-	const uint8_t* const descriptor;
-	const uint32_t number;
-	const usb_speed_t speed;
-} usb_configuration_t;
 
 typedef struct {
 	const uint8_t* descriptor;
@@ -251,42 +242,21 @@ typedef struct {
 	uint8_t controller; 				// USB0 or USB1 peripheral;
 } USBDevice;
 
-typedef struct {
-	const uint8_t* const descriptor;
-	uint8_t** descriptor_strings;
-	const uint8_t* const qualifier_descriptor;
-	usb_configuration_t* (*configurations)[];
-	const usb_configuration_t* configuration;
-	const uint8_t controller;
-} usb_device_t;
-
-typedef struct usb_endpoint_t usb_endpoint_t;
-struct usb_endpoint_t {
-	usb_setup_t setup;
-	uint8_t buffer[8];	// Buffer for use during IN stage.
-	const uint_fast8_t address;
-	//usb_device_t* device;
-	USBDevice *device;
-	usb_endpoint_t* const in;
-	usb_endpoint_t* const out;
-	void (*setup_complete)(usb_endpoint_t* const endpoint);
-	void (*transfer_complete)(usb_endpoint_t* const endpoint);
-};
-
-typedef void (*Endpoint_cb)(usb_endpoint_t* const endpoint);
 typedef struct USBEndpoint USBEndpoint;
 struct USBEndpoint {
 	usb_setup_t setup;
 	uint8_t buffer[8];	// Buffer for use during IN stage.
 	uint_fast8_t address;
 	USBDevice *device;
+	// USBEndpoint* const in;
+	// USBEndpoint* const out;
 	USBEndpoint* in;
 	USBEndpoint* out;
-	Endpoint_cb setup_complete;
-	Endpoint_cb transfer_complete;
-	// void (*setup_complete)(USBEndpoint* const endpoint);
-	// void (*transfer_complete)(USBEndpoint* const endpoint);
+	void (*setup_complete)(USBEndpoint* const endpoint);
+	void (*transfer_complete)(USBEndpoint* const endpoint);
 };
+
+typedef void (*Endpoint_cb)(USBEndpoint* const endpoint);
 
 
 #endif//__USB_TYPE_H__

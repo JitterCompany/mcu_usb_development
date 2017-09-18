@@ -29,7 +29,7 @@ typedef enum {
 	USB_RESPONSE_IN,
 	USB_RESPONSE_OUT,
 	USB_RESPONSE_STALL,
-} usb_endpoint_type_t;
+} USBEndpointype_t;
 
 typedef enum {
 	USB_TRANSFER_STAGE_SETUP,
@@ -43,7 +43,7 @@ typedef enum {
 } usb_request_status_t;
 	
 typedef usb_request_status_t (*usb_request_handler_fn)(
-	usb_endpoint_t* const endpoint,
+	USBEndpoint* const endpoint,
 	const usb_transfer_stage_t stage
 );
 
@@ -58,15 +58,15 @@ extern const usb_request_handlers_t usb0_request_handlers;
 extern const usb_request_handlers_t usb1_request_handlers;
 
 void usb_setup_complete(
-	usb_endpoint_t* const endpoint
+	USBEndpoint* const endpoint
 );
 
 void usb_control_in_complete(
-	usb_endpoint_t* const endpoint
+	USBEndpoint* const endpoint
 );
 
 void usb_control_out_complete(
-	usb_endpoint_t* const endpoint
+	USBEndpoint* const endpoint
 );
 
 #endif//__USB_REQUEST_H__

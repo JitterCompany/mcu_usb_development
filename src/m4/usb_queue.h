@@ -21,7 +21,7 @@ struct _usb_transfer_t {
 
 // This is an opaque datatype. Thou shall not touch these members.
 struct _usb_queue_t {
-        struct usb_endpoint_t* endpoint;
+        struct USBEndpoint* endpoint;
         const unsigned int pool_size;
         usb_transfer_t* volatile free_transfers;
         usb_transfer_t* volatile active;
@@ -37,10 +37,10 @@ struct _usb_queue_t {
                 .pool_size = _pool_size                                 \
         };
 
-void usb_queue_flush_endpoint(const usb_endpoint_t* const endpoint);
+void usb_queue_flush_endpoint(const USBEndpoint* const endpoint);
 
 int usb_transfer_schedule(
-	const usb_endpoint_t* const endpoint,
+	const USBEndpoint* const endpoint,
 	void* const data,
 	const uint32_t maximum_length,
         const transfer_completion_cb completion_cb,
@@ -48,7 +48,7 @@ int usb_transfer_schedule(
 );
 
 int usb_transfer_schedule_block(
-	const usb_endpoint_t* const endpoint,
+	const USBEndpoint* const endpoint,
 	void* const data,
 	const uint32_t maximum_length,
         const transfer_completion_cb completion_cb,
@@ -56,7 +56,7 @@ int usb_transfer_schedule_block(
 );
 
 int usb_transfer_schedule_ack(
-	const usb_endpoint_t* const endpoint
+	const USBEndpoint* const endpoint
 );
 
 void usb_queue_init(
@@ -64,7 +64,7 @@ void usb_queue_init(
 );
 
 void usb_queue_transfer_complete(
-        usb_endpoint_t* const endpoint
+        USBEndpoint* const endpoint
 );
 
 #endif//__USB_QUEUE_H__

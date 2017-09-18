@@ -21,7 +21,7 @@ usb_queue_head_t* usb_queue_head(
 );
 
 
-usb_endpoint_t* usb_endpoint_from_address(
+USBEndpoint* usb_endpoint_from_address(
 	const uint_fast8_t endpoint_address,
 	const USBDevice* const device
 );
@@ -94,43 +94,43 @@ void usb_set_address_deferred(
 );
 
 void usb_endpoint_init_without_descriptor(
-	const usb_endpoint_t* const endpoint,
+	const USBEndpoint* const endpoint,
   uint_fast16_t max_packet_size,
   usb_transfer_type_t transfer_type
 );
 
 void usb_endpoint_init(
-	const usb_endpoint_t* const endpoint
+	const USBEndpoint* const endpoint
 );
 
 void usb_endpoint_stall(
-	const usb_endpoint_t* const endpoint
+	const USBEndpoint* const endpoint
 );
 
 void usb_endpoint_disable(
-	const usb_endpoint_t* const endpoint
+	const USBEndpoint* const endpoint
 );
 
 void usb_endpoint_flush(
-	const usb_endpoint_t* const endpoint
+	const USBEndpoint* const endpoint
 );
 
 bool usb_endpoint_is_ready(
-	const usb_endpoint_t* const endpoint
+	const USBEndpoint* const endpoint
 );
 
 void usb_endpoint_prime(
-	const usb_endpoint_t* const endpoint,
+	const USBEndpoint* const endpoint,
 	usb_transfer_descriptor_t* const first_td
 );
 
 void usb_endpoint_schedule_wait(
-	const usb_endpoint_t* const endpoint,
+	const USBEndpoint* const endpoint,
         usb_transfer_descriptor_t* const td
 );
 
 void usb_endpoint_schedule_append(
-        const usb_endpoint_t* const endpoint,
+        const USBEndpoint* const endpoint,
         usb_transfer_descriptor_t* const tail_td,
         usb_transfer_descriptor_t* const new_td
 );

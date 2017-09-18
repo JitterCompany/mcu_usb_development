@@ -13,7 +13,7 @@ usb_queue_t* endpoint_queues[NUM_USB_CONTROLLERS][12] = {};
 #define USB_ENDPOINT_INDEX(endpoint_address) (((endpoint_address & 0xF) * 2) + ((endpoint_address >> 7) & 1))
 
 static usb_queue_t* endpoint_queue(
-        const usb_endpoint_t* const endpoint
+        const USBEndpoint* const endpoint
 ) {
         uint32_t index = USB_ENDPOINT_INDEX(endpoint->address);
         if (endpoint_queues[endpoint->device->controller][index] == NULL) while (1);
@@ -95,13 +95,13 @@ static void usb_queue_flush_queue(usb_queue_t* const queue)
         irq_enable();
 }
 
-void usb_queue_flush_endpoint(const usb_endpoint_t* const endpoint)
+void usb_queue_flush_endpoint(const USBEndpoint* const endpoint)
 {
         usb_queue_flush_queue(endpoint_queue(endpoint));
 }
 
 int usb_transfer_schedule(
-	const usb_endpoint_t* const endpoint,
+	const USBEndpoint* const endpoint,
 	void* const data,
 	const uint32_t maximum_length,
         const transfer_completion_cb completion_cb,
@@ -145,7 +145,7 @@ int usb_transfer_schedule(
 }
 	
 int usb_transfer_schedule_block(
-	const usb_endpoint_t* const endpoint,
+	const USBEndpoint* const endpoint,
 	void* const data,
 	const uint32_t maximum_length,
         const transfer_completion_cb completion_cb,
@@ -160,13 +160,13 @@ int usb_transfer_schedule_block(
 }
 
 int usb_transfer_schedule_ack(
-	const usb_endpoint_t* const endpoint
+	const USBEndpoint* const endpoint
 ) {
         return usb_transfer_schedule_block(endpoint, 0, 0, NULL, NULL);
 }
 
 /* Called when an endpoint might have completed a transfer */
-void usb_queue_transfer_complete(usb_endpoint_t* const endpoint)
+void usb_queue_transfer_complete(USBEndpoint* const endpoint)
 {
         usb_queue_t* const queue = endpoint_queue(endpoint);
         if (queue == NULL) while(1); // Uh oh

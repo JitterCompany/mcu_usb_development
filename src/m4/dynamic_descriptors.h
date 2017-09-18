@@ -173,12 +173,15 @@ bool descriptor_ok();
  * 								configurations may be created.
  */
  bool descriptor_make_endpoint(
-    USBEndpoint *endpoint,
     USBDescriptorConfiguration *config,
     USBDescriptorInterface *interface,
     uint8_t bEndpointAddress, uint8_t bmAttributes,
     uint16_t wMaxPacketSize, uint8_t bInterval);
 
+USBEndpoint* make_endpoint(USBEndpoint *endpoint, uint8_t bEndpointAddress, 
+    USBDevice *device, USBEndpoint *other_endpoint, 
+    Endpoint_cb setup_complete, Endpoint_cb transfer_complete
+    ); 
 
 /*
  * Create a descriptor string index from a string
