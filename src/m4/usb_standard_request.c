@@ -27,7 +27,7 @@ bool usb_set_configuration(
 		if( device->configurations ) {
 			USBConfiguration** configurations = *(device->configurations);
 			uint32_t i = 0;
-			const usb_speed_t usb_speed_current = usb_speed(device);
+			const USBSpeed usb_speed_current = usb_speed(device);
 			while( configurations[i] ) {
 				if( (configurations[i]->speed == usb_speed_current) &&
 				    (configurations[i]->number == configuration_number) ) {
@@ -55,7 +55,7 @@ bool usb_set_configuration(
 	return true;
 }
 	
-static usb_request_status_t usb_send_descriptor(
+static USBRequestStatus usb_send_descriptor(
 	USBEndpoint* const endpoint,
 	const uint8_t* const descriptor_data
 ) {
@@ -75,7 +75,7 @@ static usb_request_status_t usb_send_descriptor(
 	return USB_REQUEST_STATUS_OK;
 }
 
-static usb_request_status_t usb_send_descriptor_string(
+static USBRequestStatus usb_send_descriptor_string(
 	USBEndpoint* const endpoint
 ) {
 	uint_fast8_t index = endpoint->setup.value_l;
@@ -93,9 +93,9 @@ static usb_request_status_t usb_send_descriptor_string(
 	return USB_REQUEST_STATUS_STALL;
 }
 
-static usb_request_status_t usb_send_descriptor_config(
+static USBRequestStatus usb_send_descriptor_config(
 	USBEndpoint* const endpoint,
-	usb_speed_t speed,
+	USBSpeed speed,
 	const uint8_t config_num
 ) {
 	USBConfiguration** config = *(endpoint->device->configurations);
@@ -112,7 +112,7 @@ static usb_request_status_t usb_send_descriptor_config(
 	return USB_REQUEST_STATUS_STALL;
 }
 
-static usb_request_status_t usb_standard_request_get_descriptor_setup(
+static USBRequestStatus usb_standard_request_get_descriptor_setup(
 	USBEndpoint* const endpoint
 ) {
 	switch( endpoint->setup.value_h ) {
@@ -144,9 +144,9 @@ static usb_request_status_t usb_standard_request_get_descriptor_setup(
 	}
 }
 
-static usb_request_status_t usb_standard_request_get_descriptor(
+static USBRequestStatus usb_standard_request_get_descriptor(
 	USBEndpoint* const endpoint,
-	const usb_transfer_stage_t stage
+	const USBTransferStage stage
 ) {
 	switch( stage ) {
 	case USB_TRANSFER_STAGE_SETUP:
@@ -163,7 +163,7 @@ static usb_request_status_t usb_standard_request_get_descriptor(
 
 /*********************************************************************/
 
-static usb_request_status_t usb_standard_request_set_address_setup(
+static USBRequestStatus usb_standard_request_set_address_setup(
 	USBEndpoint* const endpoint
 ) {
 	usb_set_address_deferred(endpoint->device, endpoint->setup.value_l);
@@ -171,9 +171,9 @@ static usb_request_status_t usb_standard_request_set_address_setup(
 	return USB_REQUEST_STATUS_OK;
 }
 
-static usb_request_status_t usb_standard_request_set_address(
+static USBRequestStatus usb_standard_request_set_address(
 	USBEndpoint* const endpoint,
-	const usb_transfer_stage_t stage
+	const USBTransferStage stage
 ) {
 	switch( stage ) {
 	case USB_TRANSFER_STAGE_SETUP:
@@ -194,7 +194,7 @@ static usb_request_status_t usb_standard_request_set_address(
 
 /*********************************************************************/
 
-static usb_request_status_t usb_standard_request_set_configuration_setup(
+static USBRequestStatus usb_standard_request_set_configuration_setup(
 	USBEndpoint* const endpoint
 ) {
 	const uint8_t usb_configuration = endpoint->setup.value_l;
@@ -210,9 +210,9 @@ static usb_request_status_t usb_standard_request_set_configuration_setup(
 	}
 }
 
-static usb_request_status_t usb_standard_request_set_configuration(
+static USBRequestStatus usb_standard_request_set_configuration(
 	USBEndpoint* const endpoint,
-	const usb_transfer_stage_t stage
+	const USBTransferStage stage
 ) {
 	switch( stage ) {
 	case USB_TRANSFER_STAGE_SETUP:
@@ -229,7 +229,7 @@ static usb_request_status_t usb_standard_request_set_configuration(
 
 /*********************************************************************/
 
-static usb_request_status_t usb_standard_request_get_configuration_setup(
+static USBRequestStatus usb_standard_request_get_configuration_setup(
 	USBEndpoint* const endpoint
 ) {
 	if( endpoint->setup.length == 1 ) {
@@ -245,9 +245,9 @@ static usb_request_status_t usb_standard_request_get_configuration_setup(
 	}
 }
 
-static usb_request_status_t usb_standard_request_get_configuration(
+static USBRequestStatus usb_standard_request_get_configuration(
 	USBEndpoint* const endpoint,
-	const usb_transfer_stage_t stage
+	const USBTransferStage stage
 ) {
 	switch( stage ) {
 	case USB_TRANSFER_STAGE_SETUP:
@@ -264,9 +264,9 @@ static usb_request_status_t usb_standard_request_get_configuration(
 
 /*********************************************************************/
 
-usb_request_status_t usb_standard_request(
+USBRequestStatus usb_standard_request(
 	USBEndpoint* const endpoint,
-	const usb_transfer_stage_t stage
+	const USBTransferStage stage
 ) {
 	switch( endpoint->setup.request ) {
 	case USB_STANDARD_REQUEST_GET_DESCRIPTOR:

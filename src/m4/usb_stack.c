@@ -36,7 +36,7 @@ USBEndpoint* usb_endpoint_from_address(
 }
 
 uint_fast8_t usb_endpoint_address(
-    const usb_transfer_direction_t direction,
+    const USBTransferDirection direction,
     const uint_fast8_t number
 ) {
     return ((direction == USB_TRANSFER_DIRECTION_IN) ? 0x80 : 0x00) + number;
@@ -134,7 +134,7 @@ static void usb_flush_all_primed_endpoints(const USBDevice* const device) {
 
 static void usb_endpoint_set_type(
     const USBEndpoint* const endpoint,
-    const usb_transfer_type_t transfer_type
+    const USBTransferType transfer_type
 ) {
     // NOTE: UM10503 section 23.6.24 "Endpoint 1 to 5 control registers" says
     // that the disabled side of an endpoint must be set to a non-control type
@@ -464,7 +464,7 @@ static void usb_controller_set_device_mode(const USBDevice* const device) {
 	}
 }
 
-usb_speed_t usb_speed(
+USBSpeed usb_speed(
 	const USBDevice* const device
 ) {
 	if( device->controller == 0 ) {
@@ -749,7 +749,7 @@ void usb_run(
 	usb_controller_run(device);
 }
 
-static void copy_setup(usb_setup_t* const dst, const volatile uint8_t* const src) {
+static void copy_setup(USBSetup* const dst, const volatile uint8_t* const src) {
 	dst->request_type = src[0];
 	dst->request = src[1];
 	dst->value_l = src[2];
@@ -764,7 +764,7 @@ static void copy_setup(usb_setup_t* const dst, const volatile uint8_t* const src
 void usb_endpoint_init_without_descriptor(
 	const USBEndpoint* const endpoint,
   uint_fast16_t max_packet_size,
-  usb_transfer_type_t transfer_type
+  USBTransferType transfer_type
 ) {
 	usb_endpoint_flush(endpoint);
 	
@@ -805,7 +805,7 @@ void usb_endpoint_init(
 	usb_endpoint_flush(endpoint);
 
 	uint_fast16_t max_packet_size = endpoint->device->descriptor->bMaxPacketSize0;
-	usb_transfer_type_t transfer_type = USB_TRANSFER_TYPE_CONTROL;
+	USBTransferType transfer_type = USB_TRANSFER_TYPE_CONTROL;
 	const USBDescriptorEndpoint* const endpoint_descriptor = usb_endpoint_descriptor(endpoint);
 	if( endpoint_descriptor ) {
 		max_packet_size = usb_endpoint_descriptor_max_packet_size(endpoint_descriptor);

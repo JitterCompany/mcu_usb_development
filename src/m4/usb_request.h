@@ -31,8 +31,8 @@ typedef enum {
 	USB_RESPONSE_STALL,
 } USBEndpointype_t;
 
-extern const usb_request_handlers_t usb0_request_handlers;
-extern const usb_request_handlers_t usb1_request_handlers;
+extern const USBRequestHandlers usb0_request_handlers;
+extern const USBRequestHandlers usb1_request_handlers;
 
 void usb_setup_complete(
 	USBEndpoint* const endpoint

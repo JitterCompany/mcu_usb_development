@@ -42,7 +42,7 @@ static bool usb_init_done = false;
 static const usb_request_handler_fn vendor_request_handler[] = {};
 static const uint32_t vendor_request_handler_count = 0;
 
-const usb_request_handlers_t request_handlers = {
+const USBRequestHandlers request_handlers = {
 	.standard = usb_standard_request,
 	.class = 0,
 	.vendor = 0,

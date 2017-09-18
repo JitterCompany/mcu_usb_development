@@ -38,7 +38,7 @@ typedef struct ATTR_PACKED {
 		};
 		uint16_t length;
 	};
-} usb_setup_t;
+} USBSetup;
 
 typedef enum {
 	USB_STANDARD_REQUEST_GET_STATUS = 0,
@@ -52,7 +52,7 @@ typedef enum {
 	USB_STANDARD_REQUEST_GET_INTERFACE = 10,
 	USB_STANDARD_REQUEST_SET_INTERFACE = 11,
 	USB_STANDARD_REQUEST_SYNCH_FRAME = 12,
-} usb_standard_request_t;
+} USBStandardRequest;
 
 typedef enum {
 	USB_SETUP_REQUEST_TYPE_shift = 5,
@@ -67,12 +67,12 @@ typedef enum {
 	USB_SETUP_REQUEST_TYPE_DATA_TRANSFER_DIRECTION_mask = 1 << USB_SETUP_REQUEST_TYPE_DATA_TRANSFER_DIRECTION_shift,
 	USB_SETUP_REQUEST_TYPE_DATA_TRANSFER_DIRECTION_HOST_TO_DEVICE = 0 << USB_SETUP_REQUEST_TYPE_DATA_TRANSFER_DIRECTION_shift,
 	USB_SETUP_REQUEST_TYPE_DATA_TRANSFER_DIRECTION_DEVICE_TO_HOST = 1 << USB_SETUP_REQUEST_TYPE_DATA_TRANSFER_DIRECTION_shift,
-} usb_setup_request_type_t;
+} USBSetupRequestType;
 
 typedef enum {
 	USB_TRANSFER_DIRECTION_OUT = 0,
 	USB_TRANSFER_DIRECTION_IN = 1,
-} usb_transfer_direction_t;
+} USBTransferDirection;
 	
 typedef enum {
 	USB_DESCRIPTOR_TYPE_DEVICE = 1,
@@ -83,21 +83,21 @@ typedef enum {
 	USB_DESCRIPTOR_TYPE_DEVICE_QUALIFIER = 6,
 	USB_DESCRIPTOR_TYPE_OTHER_SPEED_CONFIGURATION = 7,
 	USB_DESCRIPTOR_TYPE_INTERFACE_POWER = 8,
-} usb_descriptor_type_t;
+} USBDescriptorType;
 
 typedef enum {
 	USB_TRANSFER_TYPE_CONTROL = 0,
 	USB_TRANSFER_TYPE_ISOCHRONOUS = 1,
 	USB_TRANSFER_TYPE_BULK = 2,
 	USB_TRANSFER_TYPE_INTERRUPT = 3,
-} usb_transfer_type_t;
+} USBTransferType;
 
 typedef enum {
 	USB_SPEED_LOW = 0,
 	USB_SPEED_FULL = 1,
 	USB_SPEED_HIGH = 2,
 	USB_SPEED_SUPER = 3,
-} usb_speed_t;
+} USBSpeed;
 
 
 
@@ -233,23 +233,23 @@ typedef struct
 typedef struct {
 	USBDescriptorConfiguration* descriptor;
 	const uint32_t number;
-	const usb_speed_t speed;
+	const USBSpeed speed;
 } USBConfiguration;
 
 typedef enum {
 	USB_TRANSFER_STAGE_SETUP,
 	USB_TRANSFER_STAGE_DATA,
 	USB_TRANSFER_STAGE_STATUS,
-} usb_transfer_stage_t;
+} USBTransferStage;
 
 typedef enum {
 	USB_REQUEST_STATUS_OK = 0,
 	USB_REQUEST_STATUS_STALL = 1,
-} usb_request_status_t;
+} USBRequestStatus;
 	
-typedef usb_request_status_t (*usb_request_handler_fn)(
+typedef USBRequestStatus (*usb_request_handler_fn)(
 	USBEndpoint* const endpoint,
-	const usb_transfer_stage_t stage
+	const USBTransferStage stage
 );
 
 typedef struct {
@@ -257,7 +257,7 @@ typedef struct {
 	usb_request_handler_fn class;
 	usb_request_handler_fn vendor;
 	usb_request_handler_fn reserved;
-} usb_request_handlers_t;
+} USBRequestHandlers;
 
 typedef struct {
 	USBDescriptorDevice *descriptor;
@@ -267,11 +267,11 @@ typedef struct {
 	USBConfiguration* (*configurations)[];
 	const USBConfiguration* configuration; 	// Pointer to current configuration
 	uint8_t controller; 				// USB0 or USB1 peripheral;
-	const usb_request_handlers_t *request_handlers;
+	const USBRequestHandlers *request_handlers;
 } USBDevice;
 
 struct USBEndpoint {
-	usb_setup_t setup;
+	USBSetup setup;
 	uint8_t buffer[8];	// Buffer for use during IN stage.
 	uint_fast8_t address;
 	USBDevice *device;

@@ -8,9 +8,9 @@ void usb_set_configuration_changed_cb(
         void (*callback)(USBDevice* const)
 );
 
-usb_request_status_t usb_standard_request(
+USBRequestStatus usb_standard_request(
 	USBEndpoint* const endpoint,
-	const usb_transfer_stage_t stage
+	const USBTransferStage stage
 );
 
 bool usb_set_configuration(

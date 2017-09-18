@@ -27,7 +27,7 @@ USBEndpoint* usb_endpoint_from_address(
 );
 
 uint_fast8_t usb_endpoint_address(
-	const usb_transfer_direction_t direction,
+	const USBTransferDirection direction,
 	const uint_fast8_t number
 );
 
@@ -52,7 +52,7 @@ void usb_run_tasks(
 	const USBDevice* const device
 );
 
-usb_speed_t usb_speed(
+USBSpeed usb_speed(
 	const USBDevice* const device
 );
 
@@ -96,7 +96,7 @@ void usb_set_address_deferred(
 void usb_endpoint_init_without_descriptor(
 	const USBEndpoint* const endpoint,
   uint_fast16_t max_packet_size,
-  usb_transfer_type_t transfer_type
+  USBTransferType transfer_type
 );
 
 void usb_endpoint_init(
