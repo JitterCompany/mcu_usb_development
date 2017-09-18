@@ -11,8 +11,6 @@
 #include <mcu_timing/profile.h>
 #include "stacktools.h"
 
-#include "power_saving.h"
-
 #include <lpc_tools/boardconfig.h>
 #include "board_specific_config.h"
 
