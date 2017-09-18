@@ -7,6 +7,7 @@
 #include "usb_type.h"
 #include "usb_queue.h"
 #include "usb_standard_request.h"
+#include "usb_endpoint.h"
 
 #include "usb.h"
 
@@ -805,7 +806,7 @@ void usb_endpoint_init(
 
 	uint_fast16_t max_packet_size = endpoint->device->descriptor->bMaxPacketSize0;
 	usb_transfer_type_t transfer_type = USB_TRANSFER_TYPE_CONTROL;
-	const uint8_t* const endpoint_descriptor = usb_endpoint_descriptor(endpoint);
+	const USBDescriptorEndpoint* const endpoint_descriptor = usb_endpoint_descriptor(endpoint);
 	if( endpoint_descriptor ) {
 		max_packet_size = usb_endpoint_descriptor_max_packet_size(endpoint_descriptor);
 		transfer_type = usb_endpoint_descriptor_transfer_type(endpoint_descriptor);

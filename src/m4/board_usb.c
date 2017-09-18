@@ -42,13 +42,7 @@ static bool usb_init_done = false;
 static const usb_request_handler_fn vendor_request_handler[] = {};
 static const uint32_t vendor_request_handler_count = 0;
 
-const usb_request_handlers_t usb1_request_handlers = {
-	.standard = 0,
-	.class = 0,
-	.vendor = 0,
-	.reserved = 0,
-};
-const usb_request_handlers_t usb0_request_handlers = {
+const usb_request_handlers_t request_handlers = {
 	.standard = usb_standard_request,
 	.class = 0,
 	.vendor = 0,
@@ -72,17 +66,17 @@ const USBDescriptorString *descriptor_strings[] = {
 USBConfiguration usb0_configuration = {
     .number = 1, // Why 1?
     .speed = USB_SPEED_HIGH,
-    .descriptor = 0,
+    .descriptor = NULL,
 };
 
-USBConfiguration* new_usb0_configurations[] = {
+USBConfiguration* usb0_configurations[] = {
     &usb0_configuration,
     0,
 };
 
 USBDevice usb_device;
 
-uint8_t usb0_descriptor_device_qualifier[] = {
+uint8_t descriptor_device_qualifier[] = {
 	10,					                    // bLength
 	USB_DESCRIPTOR_TYPE_DEVICE_QUALIFIER,	// bDescriptorType
 	USB_WORD(0x0200),			            // bcdUSB
@@ -97,26 +91,21 @@ uint8_t usb0_descriptor_device_qualifier[] = {
 USBDevice usb_device = 
 {
     //.descriptor = device_descriptor,
-    //.descriptor_strings = descriptor_strings,
-    .qualifier_descriptor = usb0_descriptor_device_qualifier,
-    .configurations = &new_usb0_configurations,
+    .descriptor_strings = descriptor_strings,
+    .qualifier_descriptor = descriptor_device_qualifier,
+    .configurations = &usb0_configurations,
     .configuration = 0,
     .controller = 0,
+    .request_handlers = &request_handlers
 };
 
 static void usb_configuration_changed(
 	USBDevice* const device
-) {
-    status_led_toggle(YELLOW);
-    
-    usb_endpoint_init(&ep_1_in);
-    usb_endpoint_init(&ep_1_out);
-    usb_init_done = true;
-
+) {    
 	if( device->configuration->number == 1 ) {
-		
-	} else {
-		
+        usb_endpoint_init(&ep_1_in);
+        usb_endpoint_init(&ep_1_out);
+        usb_init_done = true;
 	}
 }
 
@@ -131,40 +120,28 @@ static void ep_transfer_complete_cb(USBEndpoint* const endpoint)
 bool board_usb_init()
 {
     one_time_heap_init(&heap, heapbuffer, sizeof(heapbuffer));
-    
 
     char serial_string[] = "0xDEADCAFE";
     USBDescriptorDevice *device_descriptor =
     descriptor_make_device(VENDOR_ID, PRODUCT_ID, PRODUCT_REV);
 
-    const USBDescriptorString *manufacturer_str_desc;
-    const USBDescriptorString *product_str_desc;
-    const USBDescriptorString *serial_str_desc;
-    descriptor_from_string(&manufacturer_str_desc, MANUFACTURER_STR);
-    descriptor_from_string(&product_str_desc, PRODUCT_STR);
-    descriptor_from_string(&serial_str_desc, serial_string);
-    // save reference in descriptor_strings
-    descriptor_strings[MANUFACTURER_INDEX] = manufacturer_str_desc;
-    descriptor_strings[PRODUCT_INDEX] = product_str_desc;
-    descriptor_strings[SERIAL_INDEX] = serial_str_desc;
+    descriptor_from_string(&descriptor_strings[MANUFACTURER_INDEX], MANUFACTURER_STR);
+    descriptor_from_string(&descriptor_strings[PRODUCT_INDEX], PRODUCT_STR);
+    descriptor_from_string(&descriptor_strings[SERIAL_INDEX], serial_string);
     
-    USBDescriptorConfiguration *config_descriptor =
-    descriptor_make_configuration(device_descriptor, 1,
+    usb0_configuration.descriptor = descriptor_make_configuration(device_descriptor, 1,
         USB_CONFIG_ATTR_BUSPOWERED, USB_CONFIG_POWER_MA(500));
-
-    usb0_configuration.descriptor = (uint8_t*)config_descriptor;
     
     usb_device.descriptor = device_descriptor;
-    usb_device.descriptor_strings = descriptor_strings;
         
     USBDescriptorInterface * interface_descriptor = 
-    descriptor_make_interface(config_descriptor, 0, 0);
+        descriptor_make_interface(usb0_configuration.descriptor, 0, 0);
     
     usb_endpoint_create(&usb0_endpoint_control_out, 0x00, &usb_device, &usb0_endpoint_control_in, usb_setup_complete, usb_control_out_complete);    
     usb_endpoint_create(&usb0_endpoint_control_in, 0x80, &usb_device, &usb0_endpoint_control_out, NULL, usb_control_in_complete);    
     
     descriptor_make_endpoint(
-        config_descriptor, 
+        usb0_configuration.descriptor, 
         interface_descriptor,
         0x81,
         USB_TRANSFER_TYPE_BULK,
@@ -174,7 +151,7 @@ bool board_usb_init()
     usb_endpoint_create(&ep_1_in, 0x81, &usb_device, &ep_1_out, NULL, ep_transfer_complete_cb);
     
     descriptor_make_endpoint(
-        config_descriptor, 
+        usb0_configuration.descriptor, 
         interface_descriptor,
         0x01,
         USB_TRANSFER_TYPE_BULK,

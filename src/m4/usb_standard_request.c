@@ -7,37 +7,6 @@
 #include "usb_type.h"
 #include "usb_queue.h"
 
-const uint8_t* usb_endpoint_descriptor(
-	const USBEndpoint* const endpoint
-) {
-	const USBConfiguration* const configuration = endpoint->device->configuration;
-	if( configuration ) {
-		const uint8_t* descriptor = configuration->descriptor;
-		while( descriptor[0] != 0 ) {
-			if( descriptor[1] == USB_DESCRIPTOR_TYPE_ENDPOINT ) {
-				if( descriptor[2] == endpoint->address ) {
-					return descriptor;
-				}
-			}
-			descriptor += descriptor[0];
-		}
-	}
-	
-	return 0;
-}
-	
-uint_fast16_t usb_endpoint_descriptor_max_packet_size(
-	const uint8_t* const endpoint_descriptor
-) {
-	return (endpoint_descriptor[5] << 8) | endpoint_descriptor[4];
-}
-
-usb_transfer_type_t usb_endpoint_descriptor_transfer_type(
-	const uint8_t* const endpoint_descriptor
-) {
-	return (endpoint_descriptor[3] & 0x3);
-}
-
 void (*usb_configuration_changed_cb)(USBDevice* const) = NULL;
 
 void usb_set_configuration_changed_cb(
@@ -129,13 +98,12 @@ static usb_request_status_t usb_send_descriptor_config(
 	usb_speed_t speed,
 	const uint8_t config_num
 ) {
-	//USBConfiguration** config = *(endpoint->device->configurations);
 	USBConfiguration** config = *(endpoint->device->configurations);
 	unsigned int i = 0;
 	for( ; *config != NULL; config++ ) {
 		if( (*config)->speed == speed) {
 			if (i == config_num) {
-				return usb_send_descriptor(endpoint, (*config)->descriptor);
+				return usb_send_descriptor(endpoint, (uint8_t*)(*config)->descriptor);
 			} else {
 				i++;
 			}
@@ -156,7 +124,7 @@ static usb_request_status_t usb_standard_request_get_descriptor_setup(
 			usb_speed(endpoint->device), endpoint->setup.value_l);
 	
 	case USB_DESCRIPTOR_TYPE_DEVICE_QUALIFIER:
-		return usb_send_descriptor(endpoint, endpoint->device->qualifier_descriptor);
+		return usb_send_descriptor(endpoint, (uint8_t*)endpoint->device->qualifier_descriptor);
 
 	case USB_DESCRIPTOR_TYPE_OTHER_SPEED_CONFIGURATION:
 		// TODO: Duplicated code. Refactor.

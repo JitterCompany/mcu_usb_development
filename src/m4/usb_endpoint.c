@@ -23,6 +23,41 @@ USBEndpoint* usb_endpoint_create(USBEndpoint *endpoint, uint8_t bEndpointAddress
 
     return endpoint;
 }
+
+const USBDescriptorEndpoint *usb_endpoint_descriptor(
+    const USBEndpoint *const endpoint)
+{
+    const USBConfiguration *const configuration = endpoint->device->configuration;
+    if (configuration) {
+        const USBDescriptorConfiguration *config_desc = configuration->descriptor;
+        const USBDescriptorInterface *interface_desc = (USBDescriptorInterface*)((uint8_t*)config_desc + config_desc->bLength);
+        const USBDescriptorEndpoint *ep_descriptor = (USBDescriptorEndpoint*)((uint8_t*)interface_desc + interface_desc->bLength);
+
+        for (size_t i = 0; i < interface_desc->bNumEndpoints; i++) {
+            if (ep_descriptor->bDescriptorType == USB_DESCRIPTOR_TYPE_ENDPOINT) {
+                if (ep_descriptor->bEndpointAddress == endpoint->address) {
+                    return ep_descriptor;
+                }
+            }
+            ep_descriptor += ep_descriptor->bLength;
+        }
+    }
+
+    return 0;
+}
+
+uint_fast16_t usb_endpoint_descriptor_max_packet_size(
+	const USBDescriptorEndpoint* const endpoint_descriptor
+) {
+	return endpoint_descriptor->wMaxPacketSize;
+}
+
+usb_transfer_type_t usb_endpoint_descriptor_transfer_type(
+	const USBDescriptorEndpoint* const endpoint_descriptor
+) {
+	return (endpoint_descriptor->bmAttributes & 0x3);
+}
+
 bool usb_endpoint_alloc_queue(USBEndpoint *endpoint, size_t pool_size, void*(*alloc_cb)(size_t))    
 {
     USBTransfer *transfers = alloc_cb(sizeof(USBTransfer) * pool_size);

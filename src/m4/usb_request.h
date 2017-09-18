@@ -31,29 +31,6 @@ typedef enum {
 	USB_RESPONSE_STALL,
 } USBEndpointype_t;
 
-typedef enum {
-	USB_TRANSFER_STAGE_SETUP,
-	USB_TRANSFER_STAGE_DATA,
-	USB_TRANSFER_STAGE_STATUS,
-} usb_transfer_stage_t;
-
-typedef enum {
-	USB_REQUEST_STATUS_OK = 0,
-	USB_REQUEST_STATUS_STALL = 1,
-} usb_request_status_t;
-	
-typedef usb_request_status_t (*usb_request_handler_fn)(
-	USBEndpoint* const endpoint,
-	const usb_transfer_stage_t stage
-);
-
-typedef struct {
-	usb_request_handler_fn standard;
-	usb_request_handler_fn class;
-	usb_request_handler_fn vendor;
-	usb_request_handler_fn reserved;
-} usb_request_handlers_t;
-
 extern const usb_request_handlers_t usb0_request_handlers;
 extern const usb_request_handlers_t usb1_request_handlers;
 

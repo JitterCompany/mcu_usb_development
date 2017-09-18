@@ -12,4 +12,16 @@ USBEndpoint* usb_endpoint_create(USBEndpoint *endpoint, uint8_t bEndpointAddress
 
 bool usb_endpoint_alloc_queue(USBEndpoint *endpoint, size_t pool_size, void*(*alloc_cb)(size_t));    
 
+const USBDescriptorEndpoint* usb_endpoint_descriptor(
+	const USBEndpoint* const endpoint
+);
+
+uint_fast16_t usb_endpoint_descriptor_max_packet_size(
+	const USBDescriptorEndpoint* const endpoint_descriptor
+);
+
+usb_transfer_type_t usb_endpoint_descriptor_transfer_type(
+	const USBDescriptorEndpoint* const endpoint_descriptor
+);
+
 #endif

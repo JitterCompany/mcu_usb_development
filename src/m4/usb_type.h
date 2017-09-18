@@ -12,6 +12,8 @@
 #define VERSION_BCD(x) CPU_TO_LE16((((VERSION_TENS(x) << 4) | VERSION_ONES(x)) << 8) | \
 								   ((VERSION_TENTHS(x) << 4) | VERSION_HUNDREDTHS(x)))
 
+typedef struct USBEndpoint USBEndpoint;
+								   
 typedef struct ATTR_PACKED {
 	uint8_t request_type;
 	uint8_t request;
@@ -97,11 +99,7 @@ typedef enum {
 	USB_SPEED_SUPER = 3,
 } usb_speed_t;
 
-typedef struct {
-	const uint8_t* descriptor;
-	const uint32_t number;
-	const usb_speed_t speed;
-} USBConfiguration;
+
 
 /** Enum for possible Class, Subclass and Protocol values of device and interface descriptors. */
 enum USBDescriptor_ClassSubclassProtocol
@@ -233,6 +231,35 @@ typedef struct
 } __attribute__ ((packed)) USBDescriptorEndpoint;
 
 typedef struct {
+	USBDescriptorConfiguration* descriptor;
+	const uint32_t number;
+	const usb_speed_t speed;
+} USBConfiguration;
+
+typedef enum {
+	USB_TRANSFER_STAGE_SETUP,
+	USB_TRANSFER_STAGE_DATA,
+	USB_TRANSFER_STAGE_STATUS,
+} usb_transfer_stage_t;
+
+typedef enum {
+	USB_REQUEST_STATUS_OK = 0,
+	USB_REQUEST_STATUS_STALL = 1,
+} usb_request_status_t;
+	
+typedef usb_request_status_t (*usb_request_handler_fn)(
+	USBEndpoint* const endpoint,
+	const usb_transfer_stage_t stage
+);
+
+typedef struct {
+	usb_request_handler_fn standard;
+	usb_request_handler_fn class;
+	usb_request_handler_fn vendor;
+	usb_request_handler_fn reserved;
+} usb_request_handlers_t;
+
+typedef struct {
 	USBDescriptorDevice *descriptor;
 	const USBDescriptorString **descriptor_strings;
 	const uint8_t* const qualifier_descriptor;
@@ -240,16 +267,14 @@ typedef struct {
 	USBConfiguration* (*configurations)[];
 	const USBConfiguration* configuration; 	// Pointer to current configuration
 	uint8_t controller; 				// USB0 or USB1 peripheral;
+	const usb_request_handlers_t *request_handlers;
 } USBDevice;
 
-typedef struct USBEndpoint USBEndpoint;
 struct USBEndpoint {
 	usb_setup_t setup;
 	uint8_t buffer[8];	// Buffer for use during IN stage.
 	uint_fast8_t address;
 	USBDevice *device;
-	// USBEndpoint* const in;
-	// USBEndpoint* const out;
 	USBEndpoint* in;
 	USBEndpoint* out;
 	void (*setup_complete)(USBEndpoint* const endpoint);

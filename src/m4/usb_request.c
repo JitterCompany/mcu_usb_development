@@ -8,13 +8,13 @@ static void usb_request(
 	USBEndpoint* const endpoint,
 	const usb_transfer_stage_t stage
 ) {
-	const usb_request_handlers_t* usb_request_handlers;
-	if(endpoint->device->controller == 0) {
-		usb_request_handlers = &usb0_request_handlers;
-	}
-	if(endpoint->device->controller == 1) {
-		usb_request_handlers = &usb1_request_handlers;
-	}
+	const usb_request_handlers_t* usb_request_handlers = endpoint->device->request_handlers;
+	// if(endpoint->device->controller == 0) {
+	// 	usb_request_handlers = &usb0_request_handlers;
+	// }
+	// if(endpoint->device->controller == 1) {
+	// 	usb_request_handlers = &usb1_request_handlers;
+	// }
 	
 	usb_request_status_t status = USB_REQUEST_STATUS_STALL;
 	usb_request_handler_fn handler = 0;
