@@ -2,6 +2,7 @@
 #include <one_time_heap/one_time_heap.h>
 #include "status_led.h"
 #include <string.h>
+#include <stdio.h>
 
 #include "usb_stack.h"
 #include "usb_standard_request.h"
@@ -111,12 +112,6 @@ static void usb_configuration_changed(
 
 uint8_t heapbuffer[2048];
 
-static void ep_transfer_complete_cb(USBEndpoint* const endpoint)
-{
-    status_led_set(RED, true);
-    usb_queue_transfer_complete(endpoint);
-}
-
 bool board_usb_init()
 {
     one_time_heap_init(&heap, heapbuffer, sizeof(heapbuffer));
@@ -137,8 +132,10 @@ bool board_usb_init()
     USBDescriptorInterface * interface_descriptor = 
         descriptor_make_interface(usb0_configuration.descriptor, 0, 0);
     
-    usb_endpoint_create(&usb0_endpoint_control_out, 0x00, &usb_device, &usb0_endpoint_control_in, usb_setup_complete, usb_control_out_complete);    
-    usb_endpoint_create(&usb0_endpoint_control_in, 0x80, &usb_device, &usb0_endpoint_control_out, NULL, usb_control_in_complete);    
+    usb_endpoint_create(&usb0_endpoint_control_out, 0x00, &usb_device, &usb0_endpoint_control_in, 
+        usb_setup_complete, usb_control_out_complete);    
+    usb_endpoint_create(&usb0_endpoint_control_in, 0x80, &usb_device, &usb0_endpoint_control_out, 
+        NULL, usb_control_in_complete);    
     
     descriptor_make_endpoint(
         usb0_configuration.descriptor, 
@@ -146,9 +143,9 @@ bool board_usb_init()
         0x81,
         USB_TRANSFER_TYPE_BULK,
         512,
-        1 // no NAK?
+        0 // no NAK?
     );
-    usb_endpoint_create(&ep_1_in, 0x81, &usb_device, &ep_1_out, NULL, ep_transfer_complete_cb);
+    usb_endpoint_create(&ep_1_in, 0x81, &usb_device, &ep_1_out, NULL,  usb_queue_transfer_complete);
     
     descriptor_make_endpoint(
         usb0_configuration.descriptor, 
@@ -156,9 +153,9 @@ bool board_usb_init()
         0x01,
         USB_TRANSFER_TYPE_BULK,
         512,
-        1 // no NAK?
+        0 // no NAK?
     );
-    usb_endpoint_create(&ep_1_out, 0x01, &usb_device, &ep_1_in, NULL, ep_transfer_complete_cb);    
+    usb_endpoint_create(&ep_1_out, 0x01, &usb_device, &ep_1_in, NULL,  usb_queue_transfer_complete);    
     
     
     usb_set_configuration_changed_cb(usb_configuration_changed);
@@ -178,16 +175,35 @@ bool board_usb_init()
     return true;
 }
 
+
+char * receive_buffer[1024];
+
+void receive_cb(void* user_data, unsigned int n)
+{
+    status_led_toggle(YELLOW);
+    status_led_toggle(RED);
+    
+    char str[100];
+    snprintf(str, sizeof(str), "Dev received: %s, answer: PONG \n -----\n", receive_buffer);
+    
+    int ret = usb_transfer_schedule(&ep_1_in, str, strlen(str), NULL, NULL);
+}
+
+void board_usb_tasks() 
+{
+    if (usb_init_done) {
+        usb_transfer_schedule(&ep_1_out, receive_buffer, sizeof(receive_buffer), receive_cb, NULL);
+    }
+}
+
 void board_usb_run()
 {
     usb_run(&usb_device);
-    
 }
 
 
 void hello_complete_cb(void* user_data, unsigned int n)
 {
-    status_led_set(YELLOW, true);
 }
 
 void board_usb_send_hello()

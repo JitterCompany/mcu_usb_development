@@ -87,6 +87,8 @@ int main(void)
             status_led_set(RED, 1);
         }
 
+        board_usb_tasks();
+
     }
     return 0;
 }

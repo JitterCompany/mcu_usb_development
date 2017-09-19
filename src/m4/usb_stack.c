@@ -879,11 +879,6 @@ static void usb_check_for_transfer_events(const USBDevice* const device) {
 				endptcomplete_in_bit = USB1_ENDPTCOMPLETE_ETCE(1 << i);
 			}
 			if( endptcomplete & endptcomplete_in_bit ) {
-				if (i > 0) {
-					status_led_toggle(YELLOW);				
-
-				}
-				
 				usb_clear_endpoint_complete(endptcomplete_in_bit, device);
 				USBEndpoint* const endpoint = 
 				usb_endpoint_from_address(
