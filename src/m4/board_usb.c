@@ -112,6 +112,14 @@ static void usb_configuration_changed(
 
 uint8_t heapbuffer[2048];
 
+
+void ep_cmplt(USBEndpoint* const endpoint)
+{
+    usb_queue_transfer_complete(endpoint);
+    status_led_toggle(RED);
+}
+
+
 bool board_usb_init()
 {
     one_time_heap_init(&heap, heapbuffer, sizeof(heapbuffer));
@@ -151,11 +159,11 @@ bool board_usb_init()
         usb0_configuration.descriptor, 
         interface_descriptor,
         0x01,
-        USB_TRANSFER_TYPE_BULK,
-        512,
+        USB_TRANSFER_TYPE_INTERRUPT,
+        8,
         0 // no NAK?
     );
-    usb_endpoint_create(&ep_1_out, 0x01, &usb_device, &ep_1_in, NULL,  usb_queue_transfer_complete);    
+    usb_endpoint_create(&ep_1_out, 0x01, &usb_device, &ep_1_in, NULL,  ep_cmplt);    
     
     
     usb_set_configuration_changed_cb(usb_configuration_changed);
@@ -165,7 +173,7 @@ bool board_usb_init()
     
     usb_endpoint_alloc_queue(&usb0_endpoint_control_in, 4, usb_queue_alloc_callback);
     usb_endpoint_alloc_queue(&usb0_endpoint_control_out, 4, usb_queue_alloc_callback);
-    usb_endpoint_alloc_queue(&ep_1_out, 4, usb_queue_alloc_callback);
+    usb_endpoint_alloc_queue(&ep_1_out, 2, usb_queue_alloc_callback);
     usb_endpoint_alloc_queue(&ep_1_in, 4, usb_queue_alloc_callback);
     
     usb_endpoint_init(&usb0_endpoint_control_out);
@@ -175,24 +183,33 @@ bool board_usb_init()
     return true;
 }
 
+const volatile int indexes[] = {0,1,2,3};
 
-char * receive_buffer[1024];
+volatile char * receive_buffer[4][512];
+volatile char str[4][100];
 
 void receive_cb(void* user_data, unsigned int n)
 {
-    status_led_toggle(YELLOW);
-    status_led_toggle(RED);
+    int index = *(int*)user_data;
+    status_led_toggle(YELLOW);    
+    char * received =  receive_buffer[index];
+    received[n] = '\0';
+    volatile char *buf = str[index];
+    snprintf(buf, 100, "Device: transfer index: %d msg size: %d \n message: %s, \n ----- \n ", index,  n, received);
     
-    char str[100];
-    snprintf(str, sizeof(str), "Dev received: %s, answer: PONG \n -----\n", receive_buffer);
-    
-    int ret = usb_transfer_schedule(&ep_1_in, str, strlen(str), NULL, NULL);
+    int ret = usb_transfer_schedule(&ep_1_in, buf, strlen(buf), NULL, NULL);
 }
 
+
+volatile int count = 0;
 void board_usb_tasks() 
 {
     if (usb_init_done) {
-        usb_transfer_schedule(&ep_1_out, receive_buffer, sizeof(receive_buffer), receive_cb, NULL);
+        int ret = usb_transfer_schedule(&ep_1_out, receive_buffer[count], sizeof(receive_buffer)/4, receive_cb, (void*)&indexes[count]);
+        if (ret >= 0) {
+            count++;
+            if (count >= 4) count = 0;
+        }
     }
 }
 
@@ -208,12 +225,12 @@ void hello_complete_cb(void* user_data, unsigned int n)
 
 void board_usb_send_hello()
 {
-    char str[] = "Hello Jitter USB\n";
-    int ret = usb_transfer_schedule(&ep_1_in, str, strlen(str), 
-    hello_complete_cb, NULL);
-    if (ret < 0) {
+    //char str[] = "Hello Jitter USB\n";
+    //int ret = usb_transfer_schedule(&ep_1_in, str, strlen(str), 
+    //    hello_complete_cb, NULL);
+    //if (ret < 0) {
         //status_led_set(RED, true);
-    }
+    //}
 }
 
 bool board_usb_init_done()

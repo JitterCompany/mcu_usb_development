@@ -22,7 +22,7 @@ extern void _vStackTop(void);
 extern void _pvHeapStart(void);
 
 #define CPU_FREQ 60000000
-#define TICKRATE_HZ (1)
+#define TICKRATE_HZ (0.5)
 #define member_size(type, member) sizeof(((type *)0)->member)
 
 void Timer1_init() {
