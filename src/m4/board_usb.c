@@ -103,7 +103,7 @@ USBDevice usb_device =
 static void usb_configuration_changed(
 	USBDevice* const device
 ) {    
-	if( device->configuration->number == 1 ) {
+    if( device->configuration->number == 1 ) {
         usb_endpoint_init(&ep_1_in);
         usb_endpoint_init(&ep_1_out);
         usb_init_done = true;
@@ -116,7 +116,6 @@ uint8_t heapbuffer[2048];
 void ep_cmplt(USBEndpoint* const endpoint)
 {
     usb_queue_transfer_complete(endpoint);
-    //status_led_toggle(YELLOW);
 }
 
 
@@ -193,7 +192,6 @@ volatile char str[4][100];
 void receive_cb(void* user_data, unsigned int n)
 {
     int index = *(int*)user_data;
-    //status_led_toggle(YELLOW);    
     char * received =  receive_buffer[index];
     received[n] = '\0';
     volatile char *buf = str[index];

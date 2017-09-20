@@ -39,7 +39,7 @@ const USBDescriptorEndpoint *usb_endpoint_descriptor(
                     return ep_descriptor;
                 }
             }
-            ep_descriptor += ep_descriptor->bLength;
+            ep_descriptor++;
         }
     }
 

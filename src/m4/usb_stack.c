@@ -50,6 +50,38 @@ static uint_fast8_t usb_endpoint_number(const uint_fast8_t endpoint_address) {
     return (endpoint_address & 0xF);
 }
 
+/**
+ * Initialize all endpoints other than 0 with transfer_type_bulk. According to 
+ * UM10503 2.1 25.6.24 inactive endpoints cannot have transfer_type_control if the other
+ * endpoint from its pair is in active. 
+ */
+static void usb_endpoint_reset(const USBDevice* const device) {
+	if( device->controller == 0 ) {
+		USB0_ENDPTCTRL0 = USB0_ENDPTCTRL0_RXT1_0(USB_TRANSFER_TYPE_CONTROL) 
+			| USB0_ENDPTCTRL0_TXT1_0(USB_TRANSFER_TYPE_CONTROL);
+		USB0_ENDPTCTRL1 = USB0_ENDPTCTRL0_RXT1_0(USB_TRANSFER_TYPE_BULK) 
+			| USB0_ENDPTCTRL0_TXT1_0(USB_TRANSFER_TYPE_BULK);
+		USB0_ENDPTCTRL2 = USB0_ENDPTCTRL0_RXT1_0(USB_TRANSFER_TYPE_BULK) 
+			| USB0_ENDPTCTRL0_TXT1_0(USB_TRANSFER_TYPE_BULK);
+		USB0_ENDPTCTRL3 = USB0_ENDPTCTRL0_RXT1_0(USB_TRANSFER_TYPE_BULK) 
+			| USB0_ENDPTCTRL0_TXT1_0(USB_TRANSFER_TYPE_BULK);
+		USB0_ENDPTCTRL4 = USB0_ENDPTCTRL0_RXT1_0(USB_TRANSFER_TYPE_BULK) 
+			| USB0_ENDPTCTRL0_TXT1_0(USB_TRANSFER_TYPE_BULK);
+		USB0_ENDPTCTRL5 = USB0_ENDPTCTRL0_RXT1_0(USB_TRANSFER_TYPE_BULK) 
+			| USB0_ENDPTCTRL0_TXT1_0(USB_TRANSFER_TYPE_BULK);
+	}
+	if( device->controller == 1 ) {
+		USB1_ENDPTCTRL0 = USB1_ENDPTCTRL0_RXT1_0(USB_TRANSFER_TYPE_CONTROL) 
+			| USB1_ENDPTCTRL0_TXT1_0(USB_TRANSFER_TYPE_CONTROL);
+		USB1_ENDPTCTRL1 = USB1_ENDPTCTRL0_RXT1_0(USB_TRANSFER_TYPE_BULK) 
+			| USB1_ENDPTCTRL0_TXT1_0(USB_TRANSFER_TYPE_BULK);
+		USB1_ENDPTCTRL2 = USB0_ENDPTCTRL0_RXT1_0(USB_TRANSFER_TYPE_BULK) 
+			| USB1_ENDPTCTRL0_TXT1_0(USB_TRANSFER_TYPE_BULK);
+		USB1_ENDPTCTRL3 =USB0_ENDPTCTRL0_RXT1_0(USB_TRANSFER_TYPE_BULK) 
+			| USB1_ENDPTCTRL0_TXT1_0(USB_TRANSFER_TYPE_BULK);
+	}
+}
+
 void usb_peripheral_reset(const USBDevice* const device) {
 	if( device->controller == 0 ) {    
         Chip_RGU_TriggerReset(RGU_USB0_RST);
@@ -59,7 +91,6 @@ void usb_peripheral_reset(const USBDevice* const device) {
         Chip_RGU_TriggerReset(RGU_USB1_RST);
         while(Chip_RGU_InReset(RGU_USB1_RST));
 	}
-
 }
 
 static void usb_clear_pending_interrupts(const uint32_t mask,
@@ -136,27 +167,32 @@ static void usb_endpoint_set_type(
     const USBEndpoint* const endpoint,
     const USBTransferType transfer_type
 ) {
-    // NOTE: UM10503 section 23.6.24 "Endpoint 1 to 5 control registers" says
-    // that the disabled side of an endpoint must be set to a non-control type
-    // (e.g. bulk, interrupt, or iso).
     const uint_fast8_t endpoint_number = usb_endpoint_number(endpoint->address);
 	if(endpoint->device->controller == 0) {
-		USB0_ENDPTCTRL(endpoint_number)
-			= ( USB0_ENDPTCTRL(endpoint_number)
-			  & ~(USB0_ENDPTCTRL_TXT1_0_MASK | USB0_ENDPTCTRL_RXT_MASK)
-			  )
-			| ( USB0_ENDPTCTRL_TXT1_0(transfer_type)
-			  | USB0_ENDPTCTRL_RXT(transfer_type)
-			  );
+		if( usb_endpoint_is_in(endpoint->address) ) {
+			// clear transfer type bits
+			USB0_ENDPTCTRL(endpoint_number) &= ~(USB0_ENDPTCTRL_TXT1_0_MASK);
+			// set new transfer type bits
+			USB0_ENDPTCTRL(endpoint_number) |= (USB0_ENDPTCTRL_TXT1_0(transfer_type));
+		} else {
+			// clear transfer type bits
+			USB0_ENDPTCTRL(endpoint_number) &= ~(USB0_ENDPTCTRL_RXT_MASK);
+			// set new transfer type bits
+			USB0_ENDPTCTRL(endpoint_number) |= (USB0_ENDPTCTRL_RXT(transfer_type));
+		}
 	}
 	if(endpoint->device->controller == 1) {
-		USB1_ENDPTCTRL(endpoint_number)
-			= ( USB1_ENDPTCTRL(endpoint_number)
-			  & ~(USB1_ENDPTCTRL_TXT1_0_MASK | USB1_ENDPTCTRL_RXT_MASK)
-			  )
-			| ( USB1_ENDPTCTRL_TXT1_0(transfer_type)
-			  | USB1_ENDPTCTRL_RXT(transfer_type)
-			  );
+		if( usb_endpoint_is_in(endpoint->address) ) {
+			// clear transfer type bits
+			USB1_ENDPTCTRL(endpoint_number) &= ~(USB1_ENDPTCTRL_TXT1_0_MASK);
+			// set new transfer type bits
+			USB1_ENDPTCTRL(endpoint_number) |= (USB1_ENDPTCTRL_TXT1_0(transfer_type));
+		} else {
+			// clear transfer type bits
+			USB1_ENDPTCTRL(endpoint_number) &= ~(USB1_ENDPTCTRL_RXT_MASK);
+			// set new transfer type bits
+			USB1_ENDPTCTRL(endpoint_number) |= (USB1_ENDPTCTRL_RXT(transfer_type));
+		}
 	}
 }
 
@@ -740,6 +776,9 @@ void usb_device_init(
 			//| USB1_USBINTR_D_NAKE
 			;
 	}
+
+	usb_endpoint_reset(device);
+	
 }
 
 void usb_run(
@@ -861,11 +900,7 @@ static void usb_check_for_transfer_events(const USBDevice* const device) {
 			if(device->controller == 1) {
 				endptcomplete_out_bit = USB1_ENDPTCOMPLETE_ERCE(1 << i);
 			}
-			if (i==1 && usb_get_endpoint_complete(device) & USB0_ENDPTCOMPLETE_ERCE(1 << 1))
-				status_led_toggle(YELLOW);
 			if( endptcomplete & endptcomplete_out_bit ) {
-				if (i==1 && usb_get_endpoint_complete(device) & USB0_ENDPTCOMPLETE_ERCE(1 << 1))
-					status_led_toggle(BLUE);
 				usb_clear_endpoint_complete(endptcomplete_out_bit, device);
 				USBEndpoint* const endpoint = 
 				usb_endpoint_from_address(
@@ -873,9 +908,6 @@ static void usb_check_for_transfer_events(const USBDevice* const device) {
 					device);
 				if( endpoint && endpoint->transfer_complete ) {
 					endpoint->transfer_complete(endpoint);
-					if (i == 1) {
-						status_led_toggle(GREEN);
-					}
 				} 
 			}
 
@@ -914,8 +946,6 @@ void USB0_IRQHandler() {
 		// - SETUP packet received.
 
 		usb_check_for_setup_events(devices[0]);
-		if (usb_get_endpoint_complete(devices[0]) & USB0_ENDPTCOMPLETE_ERCE(1 << 1))
-			status_led_toggle(RED);		
 		usb_check_for_transfer_events(devices[0]);
 		
 		// TODO: Reset ignored ENDPTSETUPSTAT and ENDPTCOMPLETE flags?
