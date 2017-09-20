@@ -1,11 +1,8 @@
 #ifndef _DESCRIPTORS_H_
 #define _DESCRIPTORS_H_
 
-//#include <lpc_usb_lib/USB.h>
-#include "usb_type.h"
-#include <stddef.h>
-#include <stdint.h>
-#include <stdbool.h>
+#include <lpc_usb_lib/USB.h>
+
 /** Public API **/
 
 // may need adjustments for more than 6 endpoints or long string descriptors
@@ -17,13 +14,6 @@
 #ifndef DESC_MAX_STR_COUNT
 #define DESC_MAX_STR_COUNT (8)
 #endif
-
-#define CONTROL_ENDPOINT_SIZE (64)
-#define NO_DESCRIPTOR         (0)
-
-#define MANUFACTURER_INDEX 1
-#define PRODUCT_INDEX 2
-#define SERIAL_INDEX 3
 
 /* API overview:
  * The lines below show an overview of the available functions.
@@ -78,7 +68,7 @@ bool descriptor_ok();
  * 						is stored in an internal buffer. The pointer may be used
  * 						to call further descriptor_xxx API functions.
  */
- USBDescriptorDevice *descriptor_make_device(uint16_t idVendor,
+USB_StdDescriptor_Device_t *descriptor_make_device(uint16_t idVendor,
         uint16_t idProduct, uint16_t bcdDevice);
 
 
@@ -107,8 +97,8 @@ bool descriptor_ok();
  * 								NB: add all required interfaces before adding
  * 								additional configurations
  */
- USBDescriptorConfiguration *descriptor_make_configuration(
-    USBDescriptorDevice *device,
+USB_StdDescriptor_Configuration_Header_t *descriptor_make_configuration(
+    USB_StdDescriptor_Device_t *device,
     uint8_t bConfigurationValue, uint8_t bmAttributes, uint8_t bMaxPower);
 
 
@@ -137,8 +127,8 @@ bool descriptor_ok();
  * 								NB: add all required endpoints before adding
  * 								additional interfaces or configurations
  */
- USBDescriptorInterface *descriptor_make_interface(
-    USBDescriptorConfiguration *config,
+USB_StdDescriptor_Interface_t *descriptor_make_interface(
+    USB_StdDescriptor_Configuration_Header_t *config,
     uint8_t bInterfaceNumber, uint8_t bAlternateSetting);
 
 
@@ -172,9 +162,9 @@ bool descriptor_ok();
  * 								interface, additional interfaces or
  * 								configurations may be created.
  */
- bool descriptor_make_endpoint(
-    USBDescriptorConfiguration *config,
-    USBDescriptorInterface *interface,
+USB_StdDescriptor_Endpoint_t *descriptor_make_endpoint(
+    USB_StdDescriptor_Configuration_Header_t *config,
+    USB_StdDescriptor_Interface_t *interface,
     uint8_t bEndpointAddress, uint8_t bmAttributes,
     uint16_t wMaxPacketSize, uint8_t bInterval);
 
@@ -201,6 +191,7 @@ uint8_t descriptor_string(const char *const string);
 
 
 
+
 /** Internal API **/
 
 /*
@@ -221,7 +212,7 @@ size_t descriptor_string_size(const char *const string);
  * 						0 if there is not enough space to store the string
  * 						descriptor or the string itself is 0
  */
-size_t descriptor_from_string(const USBDescriptorString **result_desc,
+size_t descriptor_from_string(const void **result_desc,
                               const char *const string);
 
 
@@ -255,7 +246,7 @@ uint8_t *descriptor_storage_alloc(uint16_t requested_num_bytes, bool commit);
  * 							descriptor was found, or NULL of not found.
  * 							Cast the result to the right type to use it.
  */
-//void *descriptor_find(uint8_t bDescriptorType, uint8_t skip_count);
+void *descriptor_find(uint8_t bDescriptorType, uint8_t skip_count);
 
 #endif
 

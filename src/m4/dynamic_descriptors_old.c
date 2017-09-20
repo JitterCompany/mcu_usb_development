@@ -1,7 +1,4 @@
-#include "dynamic_descriptors.h"
-#include <string.h>
-
-#define USB_WORD(x)	(x & 0xFF), ((x >> 8) & 0xFF)
+#include "dynamic_descriptors_old.h"
 
 /* Descriptor buffer. Stores USB descriptors.
  *
@@ -32,47 +29,48 @@ bool descriptor_ok()
 // size of the language descriptor ("string descriptor" 0)
 const size_t language_desc_len = 4;
 
-USBDescriptorDevice *descriptor_make_device(uint16_t idVendor,
+USB_StdDescriptor_Device_t *descriptor_make_device(uint16_t idVendor,
         uint16_t idProduct, uint16_t bcdDevice)
 {
     memset((void *)&desc_storage, 0, sizeof(desc_storage));
     desc_storage.next_str = 1;
     desc_storage.end_addr = DESC_BUFF_SZ - language_desc_len;
 
-    USBDescriptorDevice *device = (USBDescriptorDevice *)
-                                         descriptor_storage_alloc(sizeof(USBDescriptorDevice), true);
+    USB_StdDescriptor_Device_t *device = (USB_StdDescriptor_Device_t *)
+                                         descriptor_storage_alloc(sizeof(USB_StdDescriptor_Device_t), true);
     if(device == NULL) {
         desc_storage.error_flag = true;
         return NULL;
     }
-    device->bLength = sizeof(USBDescriptorDevice);
-    device->bDescriptorType = USB_DESCRIPTOR_TYPE_DEVICE;
-    device->bcdUSB = 0x200; //USB_WORD(0x200);
+    device->bLength = sizeof(USB_StdDescriptor_Device_t);
+    device->bDescriptorType = DTYPE_Device;
+    device->bcdUSB = VERSION_BCD(02.00);
     device->bDeviceClass = USB_CSCP_NoDeviceClass;
     device->bDeviceSubClass = USB_CSCP_NoDeviceSubclass;
     device->bDeviceProtocol = USB_CSCP_NoDeviceProtocol;
-
-    device->bMaxPacketSize0 = CONTROL_ENDPOINT_SIZE;
-
+#if !defined(FIXED_CONTROL_ENDPOINT_SIZE)
+    device->bMaxPacketSize0 = ENDPOINT_CONTROLEP_DEFAULT_SIZE;
+#else
+    device->bMaxPacketSize0 = FIXED_CONTROL_ENDPOINT_SIZE;
+#endif
     device->idVendor = idVendor;
     device->idProduct = idProduct;
     device->bcdDevice = bcdDevice;
-
-    device->iManufacturer = MANUFACTURER_INDEX;
-    device->iProduct = PRODUCT_INDEX;
-    device->iSerialNumber = SERIAL_INDEX;
+    device->iManufacturer = NO_DESCRIPTOR;
+    device->iProduct = NO_DESCRIPTOR;
+    device->iSerialNumber = NO_DESCRIPTOR;
 
     device->bNumConfigurations = 0;
     return device;
 }
 
-USBDescriptorConfiguration *descriptor_make_configuration(
-    USBDescriptorDevice *device,
+USB_StdDescriptor_Configuration_Header_t *descriptor_make_configuration(
+    USB_StdDescriptor_Device_t *device,
     uint8_t bConfigurationValue, uint8_t bmAttributes, uint8_t bMaxPower)
 {
-    uint8_t len = sizeof(USBDescriptorConfiguration);
-    USBDescriptorConfiguration *config =
-        (USBDescriptorConfiguration *)descriptor_storage_alloc(
+    uint8_t len = sizeof(USB_StdDescriptor_Configuration_Header_t);
+    USB_StdDescriptor_Configuration_Header_t *config =
+        (USB_StdDescriptor_Configuration_Header_t *)descriptor_storage_alloc(
             len, true);
 
     if(device == NULL || config == NULL) {
@@ -83,7 +81,7 @@ USBDescriptorConfiguration *descriptor_make_configuration(
     device->bNumConfigurations++;
 
     config->bLength = len;
-    config->bDescriptorType = USB_DESCRIPTOR_TYPE_CONFIGURATION;
+    config->bDescriptorType = DTYPE_Configuration;
     config->wTotalLength = len; //
     config->bNumInterfaces = 0; // updated when adding interfaces
     config->bConfigurationValue = bConfigurationValue;
@@ -94,8 +92,8 @@ USBDescriptorConfiguration *descriptor_make_configuration(
     return config;
 }
 
-USBDescriptorInterface *descriptor_make_interface(
-    USBDescriptorConfiguration *config,
+USB_StdDescriptor_Interface_t *descriptor_make_interface(
+    USB_StdDescriptor_Configuration_Header_t *config,
     uint8_t bInterfaceNumber, uint8_t bAlternateSetting)
 {
     if(config == NULL) {
@@ -119,9 +117,9 @@ USBDescriptorInterface *descriptor_make_interface(
         return NULL;
     }
 
-    uint8_t len = sizeof(USBDescriptorInterface);
-    USBDescriptorInterface *interface =
-        (USBDescriptorInterface *)descriptor_storage_alloc(
+    uint8_t len = sizeof(USB_StdDescriptor_Interface_t);
+    USB_StdDescriptor_Interface_t *interface =
+        (USB_StdDescriptor_Interface_t *)descriptor_storage_alloc(
             len, true);
 
     if(interface == NULL) {
@@ -132,7 +130,7 @@ USBDescriptorInterface *descriptor_make_interface(
     config->bNumInterfaces++;
 
     interface->bLength = len;
-    interface->bDescriptorType = USB_DESCRIPTOR_TYPE_INTERFACE;
+    interface->bDescriptorType = DTYPE_Interface;
     interface->bInterfaceNumber = bInterfaceNumber;
     interface->bAlternateSetting = bAlternateSetting;
     interface->bNumEndpoints = 0;
@@ -143,9 +141,9 @@ USBDescriptorInterface *descriptor_make_interface(
     return interface;
 }
 
-bool descriptor_make_endpoint(
-    USBDescriptorConfiguration *config,
-    USBDescriptorInterface *interface,
+USB_StdDescriptor_Endpoint_t *descriptor_make_endpoint(
+    USB_StdDescriptor_Configuration_Header_t *config,
+    USB_StdDescriptor_Interface_t *interface,
     uint8_t bEndpointAddress, uint8_t bmAttributes,
     uint16_t wMaxPacketSize, uint8_t bInterval)
 {
@@ -154,7 +152,7 @@ bool descriptor_make_endpoint(
         return NULL;
     }
 
-    uint8_t len = sizeof(USBDescriptorEndpoint);
+    uint8_t len = sizeof(USB_StdDescriptor_Endpoint_t);
 
     /*
      * No next descriptor can be present: adding endpoints to the current
@@ -170,26 +168,26 @@ bool descriptor_make_endpoint(
         return NULL;
     }
 
-    USBDescriptorEndpoint *endpoint_desc =
-        (USBDescriptorEndpoint *)descriptor_storage_alloc(
+    USB_StdDescriptor_Endpoint_t *endpoint =
+        (USB_StdDescriptor_Endpoint_t *)descriptor_storage_alloc(
             len, true);
 
-    // if(endpoint == NULL) {
-    //     desc_storage.error_flag = true;
-    //     return NULL;
-    // }
+    if(endpoint == NULL) {
+        desc_storage.error_flag = true;
+        return NULL;
+    }
 
     config->wTotalLength+= len;
     interface->bNumEndpoints++;
-    endpoint_desc->bLength = len;
-    endpoint_desc->bDescriptorType = USB_DESCRIPTOR_TYPE_ENDPOINT;
+    endpoint->bLength = len;
+    endpoint->bDescriptorType = DTYPE_Endpoint;
 
-    endpoint_desc->bEndpointAddress = bEndpointAddress;
-    endpoint_desc->bmAttributes = bmAttributes;
-    endpoint_desc->wMaxPacketSize = wMaxPacketSize;
-    endpoint_desc->bInterval = bInterval;
+    endpoint->bEndpointAddress = bEndpointAddress;
+    endpoint->bmAttributes = bmAttributes;
+    endpoint->wMaxPacketSize = wMaxPacketSize;
+    endpoint->bInterval = bInterval;
 
-    return true; //endpoint;
+    return endpoint;
 }
 
 
@@ -219,48 +217,46 @@ uint8_t descriptor_string(const char *const string)
     return NO_DESCRIPTOR;
 }
 
-// void *descriptor_find(uint8_t bDescriptorType, uint8_t skip_count)
-// {
-//     uint8_t *currPtr = desc_storage.buffer;
-//     uint8_t *endPtr = &(desc_storage.buffer[desc_storage.next_addr]);
-//     while(currPtr < endPtr) {
-//         uint8_t len = *currPtr;
-//         uint8_t type = *(currPtr+1);
-//         if(type == bDescriptorType) {
-//             if(skip_count == 0) {
-//                 return currPtr;
-//             }
-//             skip_count--;
-//         }
-//         currPtr+=len;
-//     }
-//     return NULL;
-// }
+void *descriptor_find(uint8_t bDescriptorType, uint8_t skip_count)
+{
+    uint8_t *currPtr = desc_storage.buffer;
+    uint8_t *endPtr = &(desc_storage.buffer[desc_storage.next_addr]);
+    while(currPtr < endPtr) {
+        uint8_t len = *currPtr;
+        uint8_t type = *(currPtr+1);
+        if(type == bDescriptorType) {
+            if(skip_count == 0) {
+                return currPtr;
+            }
+            skip_count--;
+        }
+        currPtr+=len;
+    }
+    return NULL;
+}
 
 
-// /** Internal API **/
+/** Internal API **/
 
 size_t descriptor_string_size(const char *const string)
 {
     return 2 + (2*strlen(string));
 }
-
-size_t descriptor_from_string(const USBDescriptorString **result_desc,
+size_t descriptor_from_string(const void **result_desc,
                               const char *const string)
 {
     if(string == NULL) {
         return 0;
     }
-
     size_t descriptor_size = descriptor_string_size(string);
-    uint8_t *dest_buffer = descriptor_storage_alloc(descriptor_size, true);
+    uint8_t *dest_buffer = descriptor_storage_alloc(descriptor_size, false);
     if(dest_buffer == NULL) {
         return 0;
     }
     *result_desc = (void *)dest_buffer;
 
     *(dest_buffer++) = descriptor_size;
-    *(dest_buffer++) = USB_DESCRIPTOR_TYPE_STRING;
+    *(dest_buffer++) = DTYPE_String;
     size_t str_len = strlen(string);
     for(size_t i=0; i<str_len; i++) {
         *dest_buffer = string[i];
@@ -290,86 +286,86 @@ uint8_t *descriptor_storage_alloc(uint16_t requested_num_bytes, bool commit)
 
 
 
-// /** This function is called by the library when in device mode
-//  * and must be overridden (see library "USB Descriptors" documentation)
-//  * by the application code. Its purpose is to provide the descriptors
-//  * to the USB library.
-//  * When the device receives a Get Descriptor request on the control endpoint,
-//  * this function is called so that the descriptor details can be passed back,
-//  * enabling the USB library to send the appropriate descriptor(s) to the host.
-//  */
-// uint16_t CALLBACK_USB_GetDescriptor(uint8_t corenum,
-//                                     const uint16_t wValue,
-//                                     const uint8_t wIndex,
-//                                     const void **const result_addr)
-// {
-//     const uint8_t  descriptor_type   = (wValue >> 8);
-//     const uint8_t  descriptor_num = (wValue & 0xFF);
+/** This function is called by the library when in device mode
+ * and must be overridden (see library "USB Descriptors" documentation)
+ * by the application code. Its purpose is to provide the descriptors
+ * to the USB library.
+ * When the device receives a Get Descriptor request on the control endpoint,
+ * this function is called so that the descriptor details can be passed back,
+ * enabling the USB library to send the appropriate descriptor(s) to the host.
+ */
+uint16_t CALLBACK_USB_GetDescriptor(uint8_t corenum,
+                                    const uint16_t wValue,
+                                    const uint8_t wIndex,
+                                    const void **const result_addr)
+{
+    const uint8_t  descriptor_type   = (wValue >> 8);
+    const uint8_t  descriptor_num = (wValue & 0xFF);
 
-//     const void *addr = NULL;
-//     uint16_t    size = NO_DESCRIPTOR;
+    const void *addr = NULL;
+    uint16_t    size = NO_DESCRIPTOR;
 
-//     switch(descriptor_type) {
-//         case DTYPE_Device: {
-//             addr = descriptor_find(DTYPE_Device, 0);
-//             if(addr != NULL) {
-//                 size = ((const USB_StdDescriptor_Device_t *)addr)->bLength;
-//             }
-//             break;
-//         }
-//         case DTYPE_Configuration: {
-//             /*
-//              * By default, the hosts sets descriptor_num to zero, in that
-//              * case just return the first configuration found.
-//              *
-//              * Otherwise, search for a configuration matching descriptor_num.
-//              * TODO: not sure if the host uses descriptor_num in this way
-//              */
-//             uint8_t search_offset = 0;
-//             while(true) {
-//                 addr = descriptor_find(DTYPE_Configuration, search_offset);
-//                 if(addr == NULL) {
-//                     break;
-//                 }
-//                 const USB_StdDescriptor_Configuration_Header_t *cfg =
-//                     (const USB_StdDescriptor_Configuration_Header_t *)addr;
-//                 if(!descriptor_num
-//                         || cfg->bConfigurationValue == descriptor_num) {
-//                     size = cfg->wTotalLength;
-//                     break;
-//                 }
-//                 search_offset++;
-//             }
-//             break;
-//         }
-//         case DTYPE_String: {
-//             if(descriptor_num == 0) {
-//                 /* string descriptor 0 is not actually a string, it is
-//                  * a list of 16-bit language IDs. For now, return a hardcoded
-//                  * LANGUAGE_ID_ENG (0x0409, in little endian)
-//                  */
-//                 uint8_t *dest_buffer = descriptor_storage_alloc(
-//                                            language_desc_len, false);
-//                 if(dest_buffer != NULL) {
-//                     addr = dest_buffer;
-//                     size = language_desc_len;
+    switch(descriptor_type) {
+        case DTYPE_Device: {
+            addr = descriptor_find(DTYPE_Device, 0);
+            if(addr != NULL) {
+                size = ((const USB_StdDescriptor_Device_t *)addr)->bLength;
+            }
+            break;
+        }
+        case DTYPE_Configuration: {
+            /*
+             * By default, the hosts sets descriptor_num to zero, in that
+             * case just return the first configuration found.
+             *
+             * Otherwise, search for a configuration matching descriptor_num.
+             * TODO: not sure if the host uses descriptor_num in this way
+             */
+            uint8_t search_offset = 0;
+            while(true) {
+                addr = descriptor_find(DTYPE_Configuration, search_offset);
+                if(addr == NULL) {
+                    break;
+                }
+                const USB_StdDescriptor_Configuration_Header_t *cfg =
+                    (const USB_StdDescriptor_Configuration_Header_t *)addr;
+                if(!descriptor_num
+                        || cfg->bConfigurationValue == descriptor_num) {
+                    size = cfg->wTotalLength;
+                    break;
+                }
+                search_offset++;
+            }
+            break;
+        }
+        case DTYPE_String: {
+            if(descriptor_num == 0) {
+                /* string descriptor 0 is not actually a string, it is
+                 * a list of 16-bit language IDs. For now, return a hardcoded
+                 * LANGUAGE_ID_ENG (0x0409, in little endian)
+                 */
+                uint8_t *dest_buffer = descriptor_storage_alloc(
+                                           language_desc_len, false);
+                if(dest_buffer != NULL) {
+                    addr = dest_buffer;
+                    size = language_desc_len;
 
-//                     *(dest_buffer+0) = size;
-//                     *(dest_buffer+1) = DTYPE_String;
-//                     *(dest_buffer+2) = 0x09;
-//                     *(dest_buffer+3) = 0x04;
-//                 }
-//             } else if(descriptor_num < DESC_MAX_STR_COUNT) {
-//                 size = descriptor_from_string(&addr,
-//                                               desc_storage.strings[descriptor_num]);
-//             }
-//             break;
-//         }
-//     }
-//     if(addr == NULL) {
-//         return NO_DESCRIPTOR;
-//     }
-//     *result_addr = addr;
-//     return size;
-// }
+                    *(dest_buffer+0) = size;
+                    *(dest_buffer+1) = DTYPE_String;
+                    *(dest_buffer+2) = 0x09;
+                    *(dest_buffer+3) = 0x04;
+                }
+            } else if(descriptor_num < DESC_MAX_STR_COUNT) {
+                size = descriptor_from_string(&addr,
+                                              desc_storage.strings[descriptor_num]);
+            }
+            break;
+        }
+    }
+    if(addr == NULL) {
+        return NO_DESCRIPTOR;
+    }
+    *result_addr = addr;
+    return size;
+}
 

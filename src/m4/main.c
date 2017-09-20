@@ -14,7 +14,7 @@
 #include <lpc_tools/boardconfig.h>
 #include "board_specific_config.h"
 
-#include "board_usb.h"
+#include "board_usb_old.h"
 
 
 unsigned int stack_value = 0x5A5A5A5A;
@@ -78,7 +78,8 @@ int main(void)
 
     board_usb_init();
 
-    board_usb_run();
+    //board_usb_run();
+    board_usb_try_start();
 
     status_led_set(GREEN, 1);
     while (1) {         
@@ -100,10 +101,10 @@ void TIMER1_IRQHandler() {
         if (Chip_TIMER_MatchPending(LPC_TIMER1, 1))     {
             Chip_TIMER_ClearMatch(LPC_TIMER1, 1);
             
-            if (board_usb_init_done()) {
+            //if (board_usb_init_done()) {
                 //status_led_toggle(BLUE);
-                board_usb_send_hello();
-            }
+                //board_usb_send_hello();
+            //}
     
     
         }

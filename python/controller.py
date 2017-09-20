@@ -136,9 +136,9 @@ class Controller:
 
     def send_ping(self):
         print("Send 1 messages..")
-        #self.usbThread.write(self.selectedDevice, PROTOCOL_EP, "EENEENEEN", 100)
+        self.usbThread.write(self.selectedDevice, PROTOCOL_EP, "PING " + str(self.n), 100)
         #self.usbThread.write(self.selectedDevice, PROTOCOL_EP, "TWEETWEETWEE", 100)
-        self.usbThread.write(self.selectedDevice, PROTOCOL_EP, "__MSG__" + str(self.n), 100)
+        #self.usbThread.write(self.selectedDevice, PROTOCOL_EP, "__MSG1__MSG2__MSG3__MSG4__" + str(self.n), 100)
         self.n += 1
 
     def autoread_protocol_ep(self, dev, timeout):
