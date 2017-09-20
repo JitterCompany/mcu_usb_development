@@ -4,12 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "usb_core.h"
-#include "usb_standard_request.h"
-#include "usb_endpoint.h"
-
-#include "usb_queue.h"
-#include "usb_descriptors.h"
+#include <mcu_usb/mcu_usb.h>
 
 #define USB_WORD(x)	(x & 0xFF), ((x >> 8) & 0xFF)
 #define USB_STRING_LANGID		(0x0409)

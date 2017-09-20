@@ -50,9 +50,10 @@ CPM_AddModule("lpc_tools"
     GIT_REPOSITORY "https://github.com/JitterCompany/lpc_tools.git"
     GIT_TAG "2.3")
 
-#CPM_AddModule("lpc_usb_lib"
-#    GIT_REPOSITORY "https://github.com/JitterCompany/lpc_usb_lib.git"
-#    GIT_TAG "2.0.2-beta")
+CPM_AddModule("mcu_usb"
+    GIT_REPOSITORY "https://github.com/JitterCompany/mcu_usb.git"
+    GIT_TAG "0.1")
+    #SOURCE_DIR "../../../libs/mcu_usb")
 
 CPM_AddModule("fatfs_lib"
     GIT_REPOSITORY "https://github.com/JitterCompany/fatfs_lib.git"
