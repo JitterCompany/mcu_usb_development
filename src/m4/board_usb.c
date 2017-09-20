@@ -124,7 +124,9 @@ bool board_usb_init()
 {
     one_time_heap_init(&heap, heapbuffer, sizeof(heapbuffer));
 
-    char serial_string[] = "0xDEADCAFE";
+//    char serial_string[] = "0xDEADCAFE";
+    char serial_string[] = "229f-10d9-6f07" ; //0xDEADCAFE";
+    
     USBDescriptorDevice *device_descriptor =
     descriptor_make_device(VENDOR_ID, PRODUCT_ID, PRODUCT_REV);
 
@@ -159,8 +161,8 @@ bool board_usb_init()
         usb0_configuration.descriptor, 
         interface_descriptor,
         0x01,
-        USB_TRANSFER_TYPE_INTERRUPT,
-        8,
+        USB_TRANSFER_TYPE_BULK,
+        512,
         1 // no NAK?
     );
     usb_endpoint_create(&ep_1_out, 0x01, &usb_device, &ep_1_in, NULL,  ep_cmplt);    
