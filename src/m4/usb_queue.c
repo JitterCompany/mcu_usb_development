@@ -5,7 +5,7 @@
 #include "sync.h"
 #include <lpc_tools/irq.h>
 
-#include "usb_stack.h"
+#include "usb_core.h"
 #include "usb_queue.h"
 
 usb_queue_t* endpoint_queues[NUM_USB_CONTROLLERS][12] = {};
@@ -110,16 +110,23 @@ int usb_transfer_schedule(
         usb_queue_t* const queue = endpoint_queue(endpoint);
         usb_transfer_t* const transfer = allocate_transfer(queue);
         if (transfer == NULL) return -1;
-        usb_transfer_descriptor_t* const td = &transfer->td;
+        USBTransferDescriptor* const td = &transfer->td;
 
 	// Configure the transfer descriptor
         td->next_dtd_pointer = USB_TD_NEXT_DTD_POINTER_TERMINATE;
-	td->total_bytes =
-		  USB_TD_DTD_TOKEN_TOTAL_BYTES(maximum_length)
-		| USB_TD_DTD_TOKEN_IOC
-		| USB_TD_DTD_TOKEN_MULTO(0)
-		| USB_TD_DTD_TOKEN_STATUS_ACTIVE
-		;
+        td->capabilities.word = 0;
+        td->capabilities.fields.total_bytes = maximum_length; //USB_TD_DTD_TOKEN_TOTAL_BYTES(maximum_length);
+        td->capabilities.fields.int_on_complete = 1; //USB_TD_DTD_TOKEN_IOC;
+        td->capabilities.fields.multiplier_override = 0; //USB_TD_DTD_TOKEN_MULTO(0);
+        td->capabilities.fields.active = 1; //USB_TD_DTD_TOKEN_STATUS_ACTIVE;
+
+	// td->capabilities.word =
+	// 	  USB_TD_DTD_TOKEN_TOTAL_BYTES(maximum_length)
+	// 	| USB_TD_DTD_TOKEN_IOC
+	// 	| USB_TD_DTD_TOKEN_MULTO(0)
+	// 	| USB_TD_DTD_TOKEN_STATUS_ACTIVE
+        // 	;
+        
 	td->buffer_pointer_page[0] =  (uint32_t)data;
 	td->buffer_pointer_page[1] = ((uint32_t)data + 0x1000) & 0xfffff000;
 	td->buffer_pointer_page[2] = ((uint32_t)data + 0x2000) & 0xfffff000;
@@ -173,7 +180,7 @@ void usb_queue_transfer_complete(USBEndpoint* const endpoint)
         usb_transfer_t* transfer = queue->active;
 
         while (transfer != NULL) {
-                uint8_t status = transfer->td.total_bytes;
+                uint8_t status = transfer->td.capabilities.word;
 
                 // Check for failures
                 if (   status & USB_TD_DTD_TOKEN_STATUS_HALTED
@@ -193,10 +200,11 @@ void usb_queue_transfer_complete(USBEndpoint* const endpoint)
                 usb_transfer_t* next = transfer->next;
 
                 // Invoke completion callback
-                unsigned int total_bytes = (transfer->td.total_bytes & USB_TD_DTD_TOKEN_TOTAL_BYTES_MASK) >> USB_TD_DTD_TOKEN_TOTAL_BYTES_SHIFT;
+                unsigned int total_bytes = transfer->td.capabilities.fields.total_bytes;
                 unsigned int transferred = transfer->maximum_length - total_bytes;
-                if (transfer->completion_cb)
+                if (transfer->completion_cb) {
                         transfer->completion_cb(transfer->user_data, transferred);
+                }
 
                 // Advance head and free transfer
                 free_transfer(transfer);

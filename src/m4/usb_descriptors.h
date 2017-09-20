@@ -1,5 +1,5 @@
-#ifndef _DESCRIPTORS_H_
-#define _DESCRIPTORS_H_
+#ifndef USB_DESCRIPTORS_H_
+#define USB_DESCRIPTORS_H_
 
 //#include <lpc_usb_lib/USB.h>
 #include "usb_type.h"

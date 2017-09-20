@@ -4,12 +4,12 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "usb_stack.h"
+#include "usb_core.h"
 #include "usb_standard_request.h"
 #include "usb_endpoint.h"
 
 #include "usb_queue.h"
-#include "dynamic_descriptors.h"
+#include "usb_descriptors.h"
 
 #define USB_WORD(x)	(x & 0xFF), ((x >> 8) & 0xFF)
 #define USB_STRING_LANGID		(0x0409)
@@ -40,13 +40,13 @@ void* usb_queue_alloc_callback(size_t size)
 
 static bool usb_init_done = false;
 
-static const usb_request_handler_fn vendor_request_handler[] = {};
-static const uint32_t vendor_request_handler_count = 0;
+//static const usb_request_handler_fn vendor_request_handler[] = {};
+//static const uint32_t vendor_request_handler_count = 0;
 
 const USBRequestHandlers request_handlers = {
 	.standard = usb_standard_request,
 	.class = 0,
-	.vendor = 0,
+	.vendor = 0, 
 	.reserved = 0,
 };
 
@@ -192,12 +192,12 @@ volatile char str[4][100];
 void receive_cb(void* user_data, unsigned int n)
 {
     int index = *(int*)user_data;
-    char * received =  receive_buffer[index];
+    char * received =  (char*)receive_buffer[index];
     received[n] = '\0';
-    volatile char *buf = str[index];
+    char *buf = (char*) str[index];
     snprintf(buf, 100, "Device: transfer index: %d msg size: %d \n message: %s, \n ----- \n ", index,  n, received);
     
-    int ret = usb_transfer_schedule(&ep_1_in, buf, strlen(buf), NULL, NULL);
+    usb_transfer_schedule(&ep_1_in, buf, strlen(buf), NULL, NULL);
 }
 
 
@@ -222,16 +222,17 @@ void board_usb_run()
 
 void hello_complete_cb(void* user_data, unsigned int n)
 {
+    status_led_toggle(GREEN);
 }
 
 void board_usb_send_hello()
 {
-    //char str[] = "Hello Jitter USB\n";
-    //int ret = usb_transfer_schedule(&ep_1_in, str, strlen(str), 
-    //    hello_complete_cb, NULL);
-    //if (ret < 0) {
-        //status_led_set(RED, true);
-    //}
+    char hello[] = "Hello Jitter USB\n";
+    int ret = usb_transfer_schedule(&ep_1_in, hello, strlen(hello), 
+       hello_complete_cb, NULL);
+    if (ret < 0) {
+        status_led_set(RED, true);
+    }
 }
 
 bool board_usb_init_done()

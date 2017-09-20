@@ -13,7 +13,56 @@
 								   ((VERSION_TENTHS(x) << 4) | VERSION_HUNDREDTHS(x)))
 
 typedef struct USBEndpoint USBEndpoint;
-								   
+	
+
+union Capabilities {
+	struct {
+		uint32_t : 3;
+		volatile uint32_t transaction_err : 1;
+		uint32_t : 1;
+		volatile uint32_t buffer_err : 1;
+		volatile uint32_t halted : 1;
+		volatile uint32_t active : 1;
+		uint32_t : 2;
+		volatile uint32_t multiplier_override : 2;
+		uint32_t : 3;
+		volatile uint32_t int_on_complete : 1;
+		volatile uint32_t total_bytes : 15;
+
+		// force next member alinged on the next word
+		uint32_t : 0;
+	} fields;
+	volatile uint32_t word;
+};
+
+typedef struct USBTransferDescriptor USBTransferDescriptor;
+struct USBTransferDescriptor {
+	volatile USBTransferDescriptor *next_dtd_pointer;
+	union Capabilities capabilities;
+	volatile uint32_t buffer_pointer_page[5];
+	volatile uint32_t _reserved;
+};
+
+// fix type
+#ifdef USB_TD_NEXT_DTD_POINTER_TERMINATE
+#undef  USB_TD_NEXT_DTD_POINTER_TERMINATE
+#define USB_TD_NEXT_DTD_POINTER_TERMINATE \
+	((volatile USBTransferDescriptor *) \
+	(1 << USB_TD_NEXT_DTD_POINTER_TERMINATE_SHIFT))
+#endif
+/* - must be aligned on 64-byte boundaries. */
+typedef struct {
+	volatile uint32_t capabilities;
+	volatile USBTransferDescriptor *current_dtd_pointer;
+	volatile USBTransferDescriptor *next_dtd_pointer;
+	volatile uint32_t total_bytes;
+	volatile uint32_t buffer_pointer_page[5];
+	volatile uint32_t _reserved_0;
+	volatile uint8_t setup[8];
+	volatile uint32_t _reserved_1[4];
+} USBQueueHead;
+
+
 typedef struct ATTR_PACKED {
 	uint8_t request_type;
 	uint8_t request;

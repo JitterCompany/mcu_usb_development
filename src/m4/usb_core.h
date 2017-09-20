@@ -1,12 +1,13 @@
-#ifndef __USB_H__
-#define __USB_H__
+#ifndef __USB_CORE_H__
+#define __USB_CORE_H__
 
 // TODO: Refactor to support high performance operations without having to
-// expose usb_transfer_descriptor_t. Or usb_endpoint_prime(). Or, or, or...
+// expose USBTransferDescriptor. Or usb_endpoint_prime(). Or, or, or...
 #include "usb.h"
 #include "usb_type.h"
 
 #define NUM_USB_CONTROLLERS 2
+#define NUM_USB0_ENDPOINTS 6
 #define NUM_USB1_ENDPOINTS 4
 
 void usb_peripheral_reset();
@@ -15,11 +16,10 @@ void usb_bus_reset(
 	USBDevice* const device
 );
 
-usb_queue_head_t* usb_queue_head(
+USBQueueHead* usb_queue_head(
 	const uint_fast8_t endpoint_address,
 	const USBDevice* const device
 );
-
 
 USBEndpoint* usb_endpoint_from_address(
 	const uint_fast8_t endpoint_address,
@@ -121,18 +121,18 @@ bool usb_endpoint_is_ready(
 
 void usb_endpoint_prime(
 	const USBEndpoint* const endpoint,
-	usb_transfer_descriptor_t* const first_td
+	USBTransferDescriptor* const first_td
 );
 
 void usb_endpoint_schedule_wait(
 	const USBEndpoint* const endpoint,
-        usb_transfer_descriptor_t* const td
+        USBTransferDescriptor* const td
 );
 
 void usb_endpoint_schedule_append(
         const USBEndpoint* const endpoint,
-        usb_transfer_descriptor_t* const tail_td,
-        usb_transfer_descriptor_t* const new_td
+        USBTransferDescriptor* const tail_td,
+        USBTransferDescriptor* const new_td
 );
 
 #endif

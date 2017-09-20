@@ -1,4 +1,4 @@
-#include "dynamic_descriptors.h"
+#include "usb_descriptors.h"
 #include <string.h>
 
 #define USB_WORD(x)	(x & 0xFF), ((x >> 8) & 0xFF)

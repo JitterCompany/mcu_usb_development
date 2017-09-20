@@ -3,7 +3,7 @@
 
 #include "chip.h"
 
-#include "usb_stack.h"
+#include "usb_core.h"
 #include "usb_type.h"
 #include "usb_queue.h"
 #include "usb_standard_request.h"
@@ -13,18 +13,18 @@
 
 #include "status_led.h"
 
-usb_queue_head_t usb_qh0[12] ATTR_ALIGNED(2048);
-usb_queue_head_t usb_qh1[12] ATTR_ALIGNED(2048);
+USBQueueHead usb_qh0[12] ATTR_ALIGNED(2048);
+USBQueueHead usb_qh1[12] ATTR_ALIGNED(2048);
 
-static USBDevice *devices[2];
+static USBDevice *devices[NUM_USB_CONTROLLERS];
 
 #define USB_QH_INDEX(endpoint_address) (((endpoint_address & 0xF) * 2) + ((endpoint_address >> 7) & 1))
 
-usb_queue_head_t* usb_queue_head(
+USBQueueHead* usb_queue_head(
 	const uint_fast8_t endpoint_address,
 	const USBDevice* const device
 ) {
-	usb_queue_head_t * endpoint_list = device->controller ? usb_qh1 : usb_qh0;
+	USBQueueHead * endpoint_list = device->controller ? usb_qh1 : usb_qh0;
 	return &endpoint_list[USB_QH_INDEX(endpoint_address)];
 }
 
@@ -266,9 +266,9 @@ void usb_endpoint_disable(
 
 void usb_endpoint_prime(
 	const USBEndpoint* const endpoint,
-	usb_transfer_descriptor_t* const first_td	
+	USBTransferDescriptor* const first_td	
 ) {
-	usb_queue_head_t* const qh = usb_queue_head(endpoint->address, endpoint->device);
+	USBQueueHead* const qh = usb_queue_head(endpoint->address, endpoint->device);
 	
 	qh->next_dtd_pointer = first_td;
 	qh->total_bytes
@@ -318,7 +318,7 @@ static bool usb_endpoint_is_priming(
 // the given endpoint, waiting until the endpoint has finished.
 void usb_endpoint_schedule_wait(
 	const USBEndpoint* const endpoint,
-	usb_transfer_descriptor_t* const td
+	USBTransferDescriptor* const td
 ) {
 	// Ensure that endpoint is ready to be primed.
 	// It may have been flushed due to an aborted transaction.
@@ -337,8 +337,8 @@ void usb_endpoint_schedule_wait(
 // for setting the TERMINATE bit of next_dtd_pointer if needed.
 void usb_endpoint_schedule_append(
 	const USBEndpoint* const endpoint,
-	usb_transfer_descriptor_t* const tail_td,
-	usb_transfer_descriptor_t* const new_td
+	USBTransferDescriptor* const tail_td,
+	USBTransferDescriptor* const new_td
 ) {
 	bool done = 0;
 
@@ -809,7 +809,7 @@ void usb_endpoint_init_without_descriptor(
 	
 	// TODO: There are more capabilities to adjust based on the endpoint
 	// descriptor.
-	usb_queue_head_t* const qh = usb_queue_head(endpoint->address, endpoint->device);
+	USBQueueHead* const qh = usb_queue_head(endpoint->address, endpoint->device);
 	qh->capabilities
 		= USB_QH_CAPABILITIES_MULT(0)
 		| USB_QH_CAPABILITIES_ZLT
@@ -859,7 +859,7 @@ static void usb_check_for_setup_events(const USBDevice* const device) {
 	const uint32_t endptsetupstat = usb_get_endpoint_setup_status(device);
 	uint32_t endptsetupstat_bit = 0;
 	if( endptsetupstat ) {
-		for( uint_fast8_t i=0; i<6; i++ ) {
+		for( uint_fast8_t i=0; i<NUM_USB0_ENDPOINTS; i++ ) {
 			if(device->controller == 0) {
 				endptsetupstat_bit = USB0_ENDPTSETUPSTAT_ENDPTSETUPSTAT(1 << i);
 			}
@@ -893,7 +893,7 @@ static void usb_check_for_transfer_events(const USBDevice* const device) {
 	uint32_t endptcomplete_out_bit = 0;
 	uint32_t endptcomplete_in_bit = 0;
 	if( endptcomplete ) {
-		for( uint_fast8_t i=0; i<6; i++ ) {
+		for( uint_fast8_t i=0; i<NUM_USB0_ENDPOINTS; i++ ) {
 			if(device->controller == 0) {
 				endptcomplete_out_bit = USB0_ENDPTCOMPLETE_ERCE(1 << i);
 			}

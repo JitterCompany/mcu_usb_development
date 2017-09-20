@@ -2,7 +2,6 @@
 #define LPC43XX_USB_H
 
 #include "common.h"
-//#include "memorymap.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,12 +21,30 @@ extern "C" {
  *  by the Device controller crosses a 4kB-page boundary."
  */
 
-/* --- Endpoint Transfer Descriptor (dTD) ---------------------------------- */
+union Capabilities2 {
+	struct {
+		uint32_t : 3;
+		volatile uint32_t transaction_err : 1;
+		uint32_t : 1;
+		volatile uint32_t buffer_err : 1;
+		volatile uint32_t halted : 1;
+		volatile uint32_t active : 1;
+		uint32_t : 2;
+		volatile uint32_t multiplier_override : 2;
+		uint32_t : 3;
+		volatile uint32_t int_on_complete : 1;
+		volatile uint32_t total_bytes : 15;
+
+		// force next member alinged on the next word
+		uint32_t : 0;
+	} fields;
+	volatile uint32_t word;
+};
 
 typedef struct usb_transfer_descriptor_t usb_transfer_descriptor_t;
 struct usb_transfer_descriptor_t {
 	volatile usb_transfer_descriptor_t *next_dtd_pointer;
-	volatile uint32_t total_bytes;
+	union Capabilities2 capabilities;
 	volatile uint32_t buffer_pointer_page[5];
 	volatile uint32_t _reserved;
 };

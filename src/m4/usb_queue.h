@@ -11,7 +11,7 @@ typedef void (*transfer_completion_cb)(void*, unsigned int);
 
 // This is an opaque datatype. Thou shall not touch these members.
 struct _usb_transfer_t {
-        usb_transfer_descriptor_t td ATTR_ALIGNED(64);
+        USBTransferDescriptor td ATTR_ALIGNED(64);
         struct _usb_transfer_t* next;
         unsigned int maximum_length;
         struct _usb_queue_t* queue;
