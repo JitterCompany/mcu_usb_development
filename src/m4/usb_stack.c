@@ -861,15 +861,22 @@ static void usb_check_for_transfer_events(const USBDevice* const device) {
 			if(device->controller == 1) {
 				endptcomplete_out_bit = USB1_ENDPTCOMPLETE_ERCE(1 << i);
 			}
+			if (i==1 && usb_get_endpoint_complete(device) & USB0_ENDPTCOMPLETE_ERCE(1 << 1))
+				status_led_toggle(YELLOW);
 			if( endptcomplete & endptcomplete_out_bit ) {
+				if (i==1 && usb_get_endpoint_complete(device) & USB0_ENDPTCOMPLETE_ERCE(1 << 1))
+					status_led_toggle(BLUE);
 				usb_clear_endpoint_complete(endptcomplete_out_bit, device);
-			 	USBEndpoint* const endpoint = 
-					usb_endpoint_from_address(
-						usb_endpoint_address(USB_TRANSFER_DIRECTION_OUT, i),
-						device);
+				USBEndpoint* const endpoint = 
+				usb_endpoint_from_address(
+					usb_endpoint_address(USB_TRANSFER_DIRECTION_OUT, i),
+					device);
 				if( endpoint && endpoint->transfer_complete ) {
 					endpoint->transfer_complete(endpoint);
-				}
+					if (i == 1) {
+						status_led_toggle(GREEN);
+					}
+				} 
 			}
 
 			if(device->controller == 0) {
@@ -907,6 +914,8 @@ void USB0_IRQHandler() {
 		// - SETUP packet received.
 
 		usb_check_for_setup_events(devices[0]);
+		if (usb_get_endpoint_complete(devices[0]) & USB0_ENDPTCOMPLETE_ERCE(1 << 1))
+			status_led_toggle(RED);		
 		usb_check_for_transfer_events(devices[0]);
 		
 		// TODO: Reset ignored ENDPTSETUPSTAT and ENDPTCOMPLETE flags?

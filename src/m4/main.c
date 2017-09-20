@@ -101,7 +101,7 @@ void TIMER1_IRQHandler() {
             Chip_TIMER_ClearMatch(LPC_TIMER1, 1);
             
             if (board_usb_init_done()) {
-                status_led_toggle(BLUE);
+                //status_led_toggle(BLUE);
                 board_usb_send_hello();
             }
     

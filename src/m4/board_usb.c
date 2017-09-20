@@ -116,7 +116,7 @@ uint8_t heapbuffer[2048];
 void ep_cmplt(USBEndpoint* const endpoint)
 {
     usb_queue_transfer_complete(endpoint);
-    status_led_toggle(RED);
+    //status_led_toggle(YELLOW);
 }
 
 
@@ -151,7 +151,7 @@ bool board_usb_init()
         0x81,
         USB_TRANSFER_TYPE_BULK,
         512,
-        0 // no NAK?
+        1 // no NAK?
     );
     usb_endpoint_create(&ep_1_in, 0x81, &usb_device, &ep_1_out, NULL,  usb_queue_transfer_complete);
     
@@ -161,7 +161,7 @@ bool board_usb_init()
         0x01,
         USB_TRANSFER_TYPE_INTERRUPT,
         8,
-        0 // no NAK?
+        1 // no NAK?
     );
     usb_endpoint_create(&ep_1_out, 0x01, &usb_device, &ep_1_in, NULL,  ep_cmplt);    
     
@@ -191,7 +191,7 @@ volatile char str[4][100];
 void receive_cb(void* user_data, unsigned int n)
 {
     int index = *(int*)user_data;
-    status_led_toggle(YELLOW);    
+    //status_led_toggle(YELLOW);    
     char * received =  receive_buffer[index];
     received[n] = '\0';
     volatile char *buf = str[index];
@@ -205,7 +205,8 @@ volatile int count = 0;
 void board_usb_tasks() 
 {
     if (usb_init_done) {
-        int ret = usb_transfer_schedule(&ep_1_out, receive_buffer[count], sizeof(receive_buffer)/4, receive_cb, (void*)&indexes[count]);
+        int max_length = sizeof(receive_buffer)/4;
+        int ret = usb_transfer_schedule_block(&ep_1_out, receive_buffer[count], max_length, receive_cb, (void*)&indexes[count]);
         if (ret >= 0) {
             count++;
             if (count >= 4) count = 0;
