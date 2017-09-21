@@ -76,7 +76,9 @@ int main(void)
     
     init();
     
-    board_usb_init();
+    if (!board_usb_init()) {
+        status_led_set(RED, true);
+    }
 
     while (1) {         
 

@@ -25,16 +25,16 @@
 #define USB_CONFIG_ATTR_BUSPOWERED        0x80
 
 
-USBEndpoint usb0_endpoint_control_out;
-USBEndpoint usb0_endpoint_control_in;
-USBEndpoint ep_1_in; 
-USBEndpoint ep_1_out; 
+USBEndpoint *usb0_endpoint_control_out;
+USBEndpoint *usb0_endpoint_control_in;
+USBEndpoint *ep_1_in; 
+USBEndpoint *ep_1_out; 
 
 OneTimeHeap heap;
 
-void* usb_queue_alloc_callback(size_t size)
+void* usb_alloc_callback(size_t size, size_t alignment)
 {
-	return one_time_heap_alloc_aligned(&heap, size, 64);
+	return one_time_heap_alloc_aligned(&heap, size, alignment);
 }
 
 static bool usb_init_done = false;
@@ -140,14 +140,14 @@ static void usb_configuration_changed(
 	USBDevice* const device
 ) {    
     if( device->configuration->number == 1 ) {
-        usb_endpoint_init(&ep_1_in);
-        usb_endpoint_init(&ep_1_out);
+        usb_endpoint_init(ep_1_in);
+        usb_endpoint_init(ep_1_out);
         usb_init_done = true;
         status_led_set(GREEN, true);
 	}
 }
 
-uint8_t heapbuffer[2048];
+uint8_t heapbuffer[4048];
 
 
 void ep_cmplt(USBEndpoint* const endpoint)
@@ -187,11 +187,21 @@ bool board_usb_init()
         
     USBDescriptorInterface * interface_descriptor = 
         descriptor_make_interface(usb0_configuration.descriptor, 0, 0);
-    
-    usb_endpoint_create(&usb0_endpoint_control_out, 0x00, &usb_device, &usb0_endpoint_control_in, 
-        usb_setup_complete, usb_control_out_complete);    
-    usb_endpoint_create(&usb0_endpoint_control_in, 0x80, &usb_device, &usb0_endpoint_control_out, 
-        NULL, usb_control_in_complete);    
+
+    usb0_endpoint_control_out = usb_endpoint_create(
+                                            0x00, 
+                                            &usb_device, 
+                                            usb_setup_complete, 
+                                            usb_control_out_complete, 
+                                            4, usb_alloc_callback);    
+    usb0_endpoint_control_in = usb_endpoint_create(
+                                            0x80, 
+                                            &usb_device, 
+                                            NULL, 
+                                            usb_control_in_complete, 
+                                            4, usb_alloc_callback); 
+
+    usb_pair_endpoints(usb0_endpoint_control_in, usb0_endpoint_control_out);
     
     descriptor_make_endpoint(
         usb0_configuration.descriptor, 
@@ -201,7 +211,7 @@ bool board_usb_init()
         512,
         1 // no NAK?
     );
-    usb_endpoint_create(&ep_1_in, 0x81, &usb_device, &ep_1_out, NULL,  usb_queue_transfer_complete);
+    ep_1_in = usb_endpoint_create(0x81, &usb_device, NULL,  usb_queue_transfer_complete, 4, usb_alloc_callback);
     
     descriptor_make_endpoint(
         usb0_configuration.descriptor, 
@@ -211,21 +221,20 @@ bool board_usb_init()
         512,
         1 // no NAK?
     );
-    usb_endpoint_create(&ep_1_out, 0x01, &usb_device, &ep_1_in, NULL,  ep_cmplt);    
+    ep_1_out = usb_endpoint_create(0x01, &usb_device, NULL,  ep_cmplt, 4, usb_alloc_callback);    
     
     
     usb_set_configuration_changed_cb(usb_configuration_changed);
 	usb_peripheral_reset(&usb_device);
     
     usb_device_init(&usb_device);
-    
-    usb_endpoint_alloc_queue(&usb0_endpoint_control_in, 4, usb_queue_alloc_callback);
-    usb_endpoint_alloc_queue(&usb0_endpoint_control_out, 4, usb_queue_alloc_callback);
-    usb_endpoint_alloc_queue(&ep_1_out, 2, usb_queue_alloc_callback);
-    usb_endpoint_alloc_queue(&ep_1_in, 4, usb_queue_alloc_callback);
-    
-    usb_endpoint_init(&usb0_endpoint_control_out);
-    usb_endpoint_init(&usb0_endpoint_control_in);
+
+    if (usb0_endpoint_control_out && usb0_endpoint_control_in) {
+        usb_endpoint_init(usb0_endpoint_control_out);
+        usb_endpoint_init(usb0_endpoint_control_in);
+    } else {
+        return false;
+    }
 
     // set charge bit to fool USB peripheral to think a host 
     // is present. To force suspend if bus is inactive. This will
@@ -250,7 +259,7 @@ void receive_cb(void* user_data, unsigned int n)
     char *buf = (char*) str[index];
     snprintf(buf, 100, "Device: transfer index: %d msg size: %d \n message: %s, \n ----- \n ", index,  n, received);
     
-    usb_transfer_schedule(&ep_1_in, buf, strlen(buf), NULL, NULL);
+    usb_transfer_schedule(ep_1_in, buf, strlen(buf), NULL, NULL);
 }
 
 
@@ -259,7 +268,7 @@ void board_usb_tasks()
 {
     if (usb_init_done) {
         int max_length = sizeof(receive_buffer)/4;
-        int ret = usb_transfer_schedule(&ep_1_out, receive_buffer[count], max_length, receive_cb, (void*)&indexes[count]);
+        int ret = usb_transfer_schedule(ep_1_out, receive_buffer[count], max_length, receive_cb, (void*)&indexes[count]);
         if (ret >= 0) {
             count++;
             if (count >= 4) count = 0;
@@ -275,7 +284,7 @@ void hello_complete_cb(void* user_data, unsigned int n)
 static char hello[] = "Hello Jitter USB\n";
 void board_usb_send_hello()
 {
-    usb_transfer_schedule(&ep_1_in, hello, strlen(hello), 
+    usb_transfer_schedule(ep_1_in, hello, strlen(hello), 
        hello_complete_cb, NULL);
 }
 
