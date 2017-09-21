@@ -3,8 +3,12 @@
 #include "status_led.h"
 #include <string.h>
 #include <stdio.h>
+#include <mcu_timing/delay.h>
+
+#include "chip.h"
 
 #include <mcu_usb/mcu_usb.h>
+#include <mcu_usb/usb_descriptors.h>
 
 #define USB_WORD(x)	(x & 0xFF), ((x >> 8) & 0xFF)
 #define USB_STRING_LANGID		(0x0409)
@@ -84,6 +88,37 @@ uint8_t descriptor_device_qualifier[] = {
 	0x00					                // bReserved
 };
 
+void port_change() {
+
+}
+
+void bus_reset() {
+
+}
+
+void suspend() {
+    usb_init_done = false;
+    usb_disable_phy_clock();
+    status_led_set(GREEN, false);
+}
+
+void EVRT_IRQHandler() 
+{
+    if (Chip_EVRT_IsSourceInterrupting(EVRT_SRC_USB0)) {
+        // check for HIGH level event or LOW level
+        if(LPC_EVRT->HILO & (1 << EVRT_SRC_USB0)) {
+            Chip_EVRT_ConfigIntSrcActiveType(EVRT_SRC_USB0, EVRT_SRC_ACTIVE_LOW_LEVEL);
+            Chip_Clock_DisablePLL(CGU_USB_PLL);
+        } else {
+            Chip_EVRT_ConfigIntSrcActiveType(EVRT_SRC_USB0, EVRT_SRC_ACTIVE_HIGH_LEVEL);
+            Chip_Clock_EnablePLL(CGU_USB_PLL);
+        }
+        Chip_EVRT_ClrPendIntSrc(EVRT_SRC_USB0);
+    }
+}
+
+
+
 USBDevice usb_device = 
 {
     //.descriptor = device_descriptor,
@@ -92,7 +127,13 @@ USBDevice usb_device =
     .configurations = &usb0_configurations,
     .configuration = 0,
     .controller = 0,
-    .request_handlers = &request_handlers
+    .request_handlers = &request_handlers,
+    .start_of_frame = NULL,
+    .port_change = port_change,
+    .bus_reset = bus_reset,
+    .suspend = suspend,
+    .attach = NULL,
+    .detach = NULL
 };
 
 static void usb_configuration_changed(
@@ -102,6 +143,7 @@ static void usb_configuration_changed(
         usb_endpoint_init(&ep_1_in);
         usb_endpoint_init(&ep_1_out);
         usb_init_done = true;
+        status_led_set(GREEN, true);
 	}
 }
 
@@ -114,8 +156,18 @@ void ep_cmplt(USBEndpoint* const endpoint)
 }
 
 
+
 bool board_usb_init()
 {
+    status_led_set(GREEN, true);
+    
+
+    Chip_EVRT_Init();
+    Chip_EVRT_ConfigIntSrcActiveType(EVRT_SRC_USB0, EVRT_SRC_ACTIVE_HIGH_LEVEL);
+    Chip_EVRT_SetUpIntSrc(EVRT_SRC_USB0, ENABLE);
+    Chip_EVRT_ClrPendIntSrc(EVRT_SRC_USB0);    
+    NVIC_EnableIRQ(EVENTROUTER_IRQn);
+
     one_time_heap_init(&heap, heapbuffer, sizeof(heapbuffer));
 
 //    char serial_string[] = "0xDEADCAFE";
@@ -174,8 +226,14 @@ bool board_usb_init()
     
     usb_endpoint_init(&usb0_endpoint_control_out);
     usb_endpoint_init(&usb0_endpoint_control_in);
+
+    // set charge bit to fool USB peripheral to think a host 
+    // is present. To force suspend if bus is inactive. This will
+    // put usb in low power state 
+    usb_set_vbus_charge(&usb_device, true);
+
+    usb_run(&usb_device);
     
-    //TODO check init success
     return true;
 }
 
@@ -201,7 +259,7 @@ void board_usb_tasks()
 {
     if (usb_init_done) {
         int max_length = sizeof(receive_buffer)/4;
-        int ret = usb_transfer_schedule_block(&ep_1_out, receive_buffer[count], max_length, receive_cb, (void*)&indexes[count]);
+        int ret = usb_transfer_schedule(&ep_1_out, receive_buffer[count], max_length, receive_cb, (void*)&indexes[count]);
         if (ret >= 0) {
             count++;
             if (count >= 4) count = 0;
@@ -209,25 +267,16 @@ void board_usb_tasks()
     }
 }
 
-void board_usb_run()
-{
-    usb_run(&usb_device);
-}
-
-
 void hello_complete_cb(void* user_data, unsigned int n)
 {
-    status_led_toggle(GREEN);
+
 }
 
+static char hello[] = "Hello Jitter USB\n";
 void board_usb_send_hello()
 {
-    char hello[] = "Hello Jitter USB\n";
-    int ret = usb_transfer_schedule(&ep_1_in, hello, strlen(hello), 
+    usb_transfer_schedule(&ep_1_in, hello, strlen(hello), 
        hello_complete_cb, NULL);
-    if (ret < 0) {
-        status_led_set(RED, true);
-    }
 }
 
 bool board_usb_init_done()

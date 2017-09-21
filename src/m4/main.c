@@ -75,12 +75,9 @@ int main(void)
 {
     
     init();
-
+    
     board_usb_init();
 
-    board_usb_run();
-
-    status_led_set(GREEN, 1);
     while (1) {         
 
         if(!stack_valid(&_pvHeapStart, stack_value)) {
@@ -101,8 +98,7 @@ void TIMER1_IRQHandler() {
             Chip_TIMER_ClearMatch(LPC_TIMER1, 1);
             
             if (board_usb_init_done()) {
-                //status_led_toggle(BLUE);
-                board_usb_send_hello();
+                //board_usb_send_hello();
             }
     
     
