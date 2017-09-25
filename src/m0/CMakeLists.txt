@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.5.0 FATAL_ERROR)
 
 set(CMAKE_TOOLCHAIN_FILE
     ${TOPLEVEL_SRC_DIR}/cmake/toolchain-gcc-arm-embedded.cmake)
-project(m4)
+project(m0)
 
 #------------------------------------------------------------------------------
 # Target Specifig Build Settings
@@ -10,22 +10,17 @@ project(m4)
 
 # target specific
 set(EXE_NAME                ${PROJECT_NAME})
-#set(FLASH_ADDR              0x1A008000)
-set(FLASH_ADDR              0x1A000000)
-set(DEBUG_BREAKPOINT_LIMIT  6)
-set(DEBUG_WATCHPOINT_LIMIT  4)
+set(FLASH_ADDR              0x1B000000)
+set(DEBUG_BREAKPOINT_LIMIT  2)
+set(DEBUG_WATCHPOINT_LIMIT  1)
 
-set(MCU_PLATFORM            43xx_m4)
+set(MCU_PLATFORM            43xx_m0)
 
-add_definitions(-D__FPU_PRESENT -D__ARM_ARCH_7M__)
-set(FLOAT_FLAGS         "-mfloat-abi=hard -mfpu=fpv4-sp-d16")
-
-set(TARGET_C_FLAGS      "-DCORE_M4 -mcpu=cortex-m4 \
-    -D__LPC43XX__  ${FLOAT_FLAGS}")
-set(TARGET_L_FLAGS      "-mcpu=cortex-m4 ${FLOAT_FLAGS}")
+set(TARGET_C_FLAGS  "-DCORE_M0 -mcpu=cortex-m0 -D__LPC43XX__")
+set(TARGET_L_FLAGS  "-mcpu=cortex-m0")
 
 #------------------------------------------------------------------------------
-# Include Common Settings & CPM Modules
+# Common Settings & CPM Modules
 #------------------------------------------------------------------------------
 
 include(${TOPLEVEL_SRC_DIR}/cmake/common_settings.cmake)
@@ -35,21 +30,26 @@ include(${TOPLEVEL_SRC_DIR}/cmake/common_settings.cmake)
 # Target Specific CPM Modules
 #------------------------------------------------------------------------------
 
-CPM_AddModule("43xx_m4_startup"
-    GIT_REPOSITORY "https://github.com/JitterCompany/43xx_m4_startup.git"
+CPM_AddModule("43xx_m0_startup"
+    GIT_REPOSITORY "https://github.com/JitterCompany/43xx_m0_startup.git"
     GIT_TAG "1.0")
 
-CPM_AddModule("lpc_chip_43xx_m4"
-    GIT_REPOSITORY "https://github.com/JitterCompany/lpc_chip_43xx_m4.git"
-    GIT_TAG "3.0.1")
-
-CPM_AddModule("mcu_timing"
-    GIT_REPOSITORY "https://github.com/JitterCompany/mcu_timing.git"
-    GIT_TAG "1.4.0")
+CPM_AddModule("lpc_chip_43xx_m0"
+    GIT_REPOSITORY "https://github.com/JitterCompany/lpc_chip_43xx_m0.git"
+    GIT_TAG "3.0.2")
 
 CPM_AddModule("lpc_tools"
     GIT_REPOSITORY "https://github.com/JitterCompany/lpc_tools.git"
     GIT_TAG "2.3")
+
+CPM_AddModule("mcu_usb"
+    GIT_REPOSITORY "https://github.com/JitterCompany/mcu_usb.git"
+    GIT_TAG "0.3")
+    #SOURCE_DIR "../../../libs/mcu_usb")
+
+CPM_AddModule("one_time_heap"
+    GIT_REPOSITORY "https://github.com/JitterCompany/one_time_heap.git"
+    GIT_TAG "2.0")
 
 CPM_Finish()
 
@@ -58,8 +58,11 @@ CPM_Finish()
 # Build Setup & Targets
 #------------------------------------------------------------------------------
 
+include_directories("${CMAKE_SOURCE_DIR}/src/m0")
+
 file(GLOB SPECIFIC_SOURCES 
-"${CMAKE_SOURCE_DIR}/src/m4/*.c"
+"${CMAKE_SOURCE_DIR}/src/m0/*.c"
+"${CMAKE_SOURCE_DIR}/src/m0/*/*.c"
 )
 list(APPEND SOURCES ${SPECIFIC_SOURCES})
 

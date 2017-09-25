@@ -8,13 +8,24 @@
 const uint32_t OscRateIn = 12000000;
 const uint32_t ExtRateIn = 0;
 
+#ifdef CORE_M0
 static const NVICConfig NVIC_config[] = {
+    {EVENTROUTER_IRQn,  0},     // EVRT: Wakeup from deep sleep
+    {USB0_IRQn,         0},     // USB: probably not very timing sensitive
+};
+#elif defined(CORE_M4) 
+static const NVICConfig NVIC_config[] = {
+    {EVENTROUTER_IRQn,  0},     // EVRT: Wakeup from deep sleep
     {USB0_IRQn,         0},     // USB: probably not very timing sensitive
     {TIMER3_IRQn,       1},     // delay timer: high priority to ensure
                                 // timestamps are correct in any context
     {TIMER1_IRQn,       2},     // sample timer
+
     {SDIO_IRQn,         3},     // SD card: probably not timing sensitive
 };
+#else
+    #error "Please define CORE_M4 or CORE_M0"
+#endif
 
 
 static const PINMUX_GRP_T pinmuxing[] = {
@@ -71,9 +82,10 @@ void board_setup(void)
 {
     board_set_config(&config);
 
+#ifdef CORE_M4    
     Chip_SCU_ClockPinMuxSet(0, (SCU_PINIO_FAST | SCU_MODE_FUNC4)); //SD CLK
-
     board_setup_pins();
+#endif    
 }
 
 void board_LED_init(void)

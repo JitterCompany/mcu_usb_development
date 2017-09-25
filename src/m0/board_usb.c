@@ -3,7 +3,6 @@
 #include "status_led.h"
 #include <string.h>
 #include <stdio.h>
-#include <mcu_timing/delay.h>
 
 #include "chip.h"
 

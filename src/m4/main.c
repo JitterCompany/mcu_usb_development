@@ -14,8 +14,9 @@
 #include <lpc_tools/boardconfig.h>
 #include "board_specific_config.h"
 
-#include "board_usb.h"
 
+
+#define M0_BOOT_ADDR (0x1B000000)
 
 unsigned int stack_value = 0x5A5A5A5A;
 extern void _vStackTop(void);
@@ -75,18 +76,14 @@ int main(void)
 {
     
     init();
-    
-    if (!board_usb_init()) {
-        status_led_set(RED, true);
-    }
 
+    M0_boot(M0_BOOT_ADDR);
+   
     while (1) {         
 
         if(!stack_valid(&_pvHeapStart, stack_value)) {
             status_led_set(RED, 1);
         }
-
-        board_usb_tasks();
 
     }
     return 0;
@@ -99,9 +96,9 @@ void TIMER1_IRQHandler() {
         if (Chip_TIMER_MatchPending(LPC_TIMER1, 1))     {
             Chip_TIMER_ClearMatch(LPC_TIMER1, 1);
             
-            if (board_usb_init_done()) {
-                //board_usb_send_hello();
-            }
+            // if (board_usb_init_done()) {
+            //     //board_usb_send_hello();
+            // }
     
     
         }

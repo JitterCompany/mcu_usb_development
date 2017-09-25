@@ -198,10 +198,11 @@ static const BoardConfig config = {
 void board_setup(void)
 {
     board_set_config(&config);
-
+#ifdef CORE_M4        
     Chip_SCU_ClockPinMuxSet(0, (SCU_PINIO_FAST | SCU_MODE_FUNC4)); //SD CLK
 
     board_setup_pins();
+#endif        
 }
 
 void board_LED_init(void)
